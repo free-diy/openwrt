@@ -19,10 +19,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    # 必须赋予写权限才能删除旧 Release
+    # 必须显式声明写入权限，否则无法删除旧 Release
     permissions:
       contents: write
- 
+
     steps:
 
     - name: Free Disk Space (Ubuntu)
@@ -63,14 +63,11 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
-        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
-        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
-        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
-        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
-        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+        # 获取源码信息
+        echo "COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")" >> $GITHUB_ENV
+        echo "COMMIT_DATE=$(git show -s --date=short --format="%ci")" >> $GITHUB_ENV
+        echo "COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")" >> $GITHUB_ENV
+        echo "COMMIT_HASH=$(git show -s --date=short --format="hash: %H")" >> $GITHUB_ENV
 
     - name: Generate Variables
       run: |
@@ -136,18 +133,12 @@ jobs:
       if: (!cancelled())
       run: df -hT
 
-    - name: Upload Bin Directory
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      uses: actions/upload-artifact@main
-      with:
-        name: ${{ env.SOURCE_REPO }}-bin-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
-        path: ${{ env.OPENWRT_PATH }}/bin
-
     - name: Organize files
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
+        # 移除不需要的文件，增加 -f 容错
+        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json sha256sums
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
     - name: Upload Firmware To Release
@@ -155,35 +146,35 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        # 使用运行编号确保 Tag 唯一，避免覆盖
+        # 使用运行编号确保 Tag 唯一，防止覆盖
         tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
         allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+          - 📅 源码日期: ${{ env.COMMIT_DATE }}
           - ⚙️ 构建编号: ${{ github.run_number }}
           - 🌐 默认地址: 192.168.100.252
+          - 🔑 默认密码: 空
 
     - name: Cleanup Old Releases (Keep Last 3)
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true' && !cancelled()
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 1. 获取所有以该 FIRMWARE_TAG 开头的 Release 标签名
-        # 2. 按创建时间从新到旧排序
-        # 3. 跳过前 3 个，删除剩下的
-        
-        RELEASES=$(gh release list --limit 100 --json tagName,createdAt --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\")) | .tagName")
+        # 提取当前机型专属的 Tag 列表
+        RELEASES=$(gh release list --limit 100 --json tagName --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\")) | .tagName")
         
         COUNT=0
         for TAG in $RELEASES; do
           COUNT=$((COUNT + 1))
           if [ $COUNT -gt 3 ]; then
-            echo "正在清理旧的 Release 和 Tag: $TAG"
+            echo "正在清理旧 Release 和 Tag: $TAG"
             gh release delete "$TAG" --yes --cleanup-tag
           else
-            echo "保留最新的 Release: $TAG"
+            echo "保留 Release: $TAG"
           fi
         done
