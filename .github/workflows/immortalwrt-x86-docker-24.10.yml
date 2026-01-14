@@ -13,13 +13,14 @@ env:
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: immortalwrt-24.10-docker-x86
+  # 修改为精简版对应的英文名 Minimal
+  FIRMWARE_TAG: immortalwrt-x86-docker
   TZ: Asia/Shanghai
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    # 必须显式声明写入权限，否则无法删除旧 Release
+    # 必须显式声明写入权限，否则无法执行删除旧 Release 的操作
     permissions:
       contents: write
 
@@ -63,7 +64,7 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        # 获取源码信息
+        # 记录源码信息用于 Release 描述
         echo "COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")" >> $GITHUB_ENV
         echo "COMMIT_DATE=$(git show -s --date=short --format="%ci")" >> $GITHUB_ENV
         echo "COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")" >> $GITHUB_ENV
@@ -137,8 +138,7 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        # 移除不需要的文件，增加 -f 容错
-        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json sha256sums
+        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
     - name: Upload Firmware To Release
@@ -146,13 +146,13 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        # 使用运行编号确保 Tag 唯一，防止覆盖
+        # 使用运行编号确保 Tag 唯一且带序号，防止覆盖
         tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
         allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          **这是 ${{ env.FIRMWARE_TAG }} 的自动构建版本**
           ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           - 📅 源码日期: ${{ env.COMMIT_DATE }}
@@ -165,16 +165,20 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 提取当前机型专属的 Tag 列表
-        RELEASES=$(gh release list --limit 100 --json tagName --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\")) | .tagName")
+        # 1. 获取属于该机型的所有 Release，并按创建时间倒序排列
+        # 2. 使用 -r 确保输出的是原始字符串
+        RELEASES=$(gh release list --limit 100 --json tagName,createdAt --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\"))" | \
+                  jq -r -s 'sort_by(.createdAt) | reverse | .[].tagName')
+        
+        echo "检查属于 ${{ env.FIRMWARE_TAG }} 的历史版本..."
         
         COUNT=0
         for TAG in $RELEASES; do
           COUNT=$((COUNT + 1))
           if [ $COUNT -gt 3 ]; then
-            echo "正在清理旧 Release 和 Tag: $TAG"
+            echo "🗑️ 正在清理第 $COUNT 个旧版本: $TAG"
             gh release delete "$TAG" --yes --cleanup-tag
           else
-            echo "保留 Release: $TAG"
+            echo "⭐ 保留最新版本: $TAG"
           fi
         done
