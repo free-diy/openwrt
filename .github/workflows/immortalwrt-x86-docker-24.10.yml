@@ -19,7 +19,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
+    # 必须赋予写权限才能删除旧 Release
+    permissions:
+      contents: write
+ 
     steps:
 
     - name: Free Disk Space (Ubuntu)
@@ -148,20 +151,14 @@ jobs:
         rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
-    - name: Upload Firmware To Artifact
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
-      uses: actions/upload-artifact@main
-      with:
-        name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE_PATH }}
-
     - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: true
-        tag: ${{ env.FIRMWARE_TAG }}
+        # 修改点：添加运行编号，确保每次生成的 Tag 都是唯一的
+        tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
+        allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
@@ -171,3 +168,23 @@ jobs:
           - ⚙️ 带Docker
           - 🌐 默认地址: 192.168.100.252
           - 🔑 默认密码: 空
+
+    - name: Cleanup Old Releases (Keep Last 3)
+      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true' && !cancelled()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 获取包含该固件标签的所有 Release 列表（按时间倒序）
+        # awk 提取第一列的 Tag 名
+        OLD_TAGS=$(gh release list --limit 20 | grep "${{ env.FIRMWARE_TAG }}" | awk '{print $1}')
+        
+        i=0
+        for TAG in $OLD_TAGS; do
+          i=$((i+1))
+          if [ $i -gt 3 ]; then
+            echo "Deleting old release: $TAG"
+            gh release delete "$TAG" --yes --cleanup-tag
+          else
+            echo "Keeping release: $TAG"
+          fi
+        done
