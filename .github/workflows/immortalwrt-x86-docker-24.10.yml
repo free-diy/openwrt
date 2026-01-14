@@ -147,7 +147,6 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cat sha256sums
         rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -156,35 +155,35 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        # 修改点：添加运行编号，确保每次生成的 Tag 都是唯一的
+        # 使用运行编号确保 Tag 唯一，避免覆盖
         tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
         allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-          - ⚙️ 带Docker
+          - ⚙️ 构建编号: ${{ github.run_number }}
           - 🌐 默认地址: 192.168.100.252
-          - 🔑 默认密码: 空
 
     - name: Cleanup Old Releases (Keep Last 3)
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true' && !cancelled()
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 获取包含该固件标签的所有 Release 列表（按时间倒序）
-        # awk 提取第一列的 Tag 名
-        OLD_TAGS=$(gh release list --limit 20 | grep "${{ env.FIRMWARE_TAG }}" | awk '{print $1}')
+        # 1. 获取所有以该 FIRMWARE_TAG 开头的 Release 标签名
+        # 2. 按创建时间从新到旧排序
+        # 3. 跳过前 3 个，删除剩下的
         
-        i=0
-        for TAG in $OLD_TAGS; do
-          i=$((i+1))
-          if [ $i -gt 3 ]; then
-            echo "Deleting old release: $TAG"
+        RELEASES=$(gh release list --limit 100 --json tagName,createdAt --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\")) | .tagName")
+        
+        COUNT=0
+        for TAG in $RELEASES; do
+          COUNT=$((COUNT + 1))
+          if [ $COUNT -gt 3 ]; then
+            echo "正在清理旧的 Release 和 Tag: $TAG"
             gh release delete "$TAG" --yes --cleanup-tag
           else
-            echo "Keeping release: $TAG"
+            echo "保留最新的 Release: $TAG"
           fi
         done
