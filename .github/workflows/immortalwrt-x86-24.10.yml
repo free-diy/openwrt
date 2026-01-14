@@ -13,12 +13,16 @@ env:
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: immortalwrt-24.10-x86
+  # 【修改】使用英语精简版命名，并作为唯一识别前缀
+  FIRMWARE_TAG: immortalwrt-x86-minimal
   TZ: Asia/Shanghai
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    # 【检查点】必须拥有写入权限
+    permissions:
+      contents: write
 
     steps:
 
@@ -60,14 +64,11 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
-        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
-        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
-        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
-        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
-        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+        # 提取源码信息用于 Release 描述
+        echo "COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")" >> $GITHUB_ENV
+        echo "COMMIT_DATE=$(git show -s --date=short --format="%ci")" >> $GITHUB_ENV
+        echo "COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")" >> $GITHUB_ENV
+        echo "COMMIT_HASH=$(git show -s --date=short --format="hash: %H")" >> $GITHUB_ENV
 
     - name: Generate Variables
       run: |
@@ -133,41 +134,51 @@ jobs:
       if: (!cancelled())
       run: df -hT
 
-    - name: Upload Bin Directory
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      uses: actions/upload-artifact@main
-      with:
-        name: ${{ env.SOURCE_REPO }}-bin-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
-        path: ${{ env.OPENWRT_PATH }}/bin
-
     - name: Organize files
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cat sha256sums
-        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
+        # 容错性清理
+        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json sha256sums
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
-
-    - name: Upload Firmware To Artifact
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
-      uses: actions/upload-artifact@main
-      with:
-        name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE_PATH }}
 
     - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: true
-        tag: ${{ env.FIRMWARE_TAG }}
+        # 【检查点】带编号的唯一 Tag，allowUpdates 为 false
+        tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
+        allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          **这是 ${{ env.FIRMWARE_TAG }} 的自动构建版本**
           ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+          - 📅 源码日期: ${{ env.COMMIT_DATE }}
           - ⚙️ 不带Docker
           - 🌐 默认地址: 192.168.100.252
           - 🔑 默认密码: 空
+
+    - name: Cleanup Old Releases (Keep Last 3)
+      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true' && !cancelled()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 【检查点】健壮的排序与清理逻辑
+        RELEASES=$(gh release list --limit 100 --json tagName,createdAt --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\"))" | \
+                  jq -r -s 'sort_by(.createdAt) | reverse | .[].tagName')
+        
+        echo "检查属于 ${{ env.FIRMWARE_TAG }} 的历史版本..."
+        
+        COUNT=0
+        for TAG in $RELEASES; do
+          COUNT=$((COUNT + 1))
+          if [ $COUNT -gt 3 ]; then
+            echo "🗑️ 正在清理第 $COUNT 个旧版本: $TAG"
+            gh release delete "$TAG" --yes --cleanup-tag
+          else
+            echo "⭐ 保留最新版本: $TAG"
+          fi
+        done
