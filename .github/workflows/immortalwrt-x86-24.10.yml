@@ -14,7 +14,7 @@ env:
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
   # 【修改】使用英语精简版命名，并作为唯一识别前缀
-  FIRMWARE_TAG: immortalwrt-x86-minimal
+  FIRMWARE_TAG: immortalwrt-24.10-x86-lite
   TZ: Asia/Shanghai
 
 jobs:
