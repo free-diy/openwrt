@@ -49,7 +49,7 @@ git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki pack
 # 添加momo
 #git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-momo package/OpenWrt-momo
 # 添加openclash
-git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-openclash
+git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
 # 添加istore
 git_sparse_clone main https://github.com/linkease/istore-ui package/app-store-ui
 git_sparse_clone main https://github.com/linkease/istore package/luci
