@@ -40,7 +40,7 @@ git clone --depth=1 -b main https://github.com/sirpdboy/luci-app-advancedplus pa
 # 拉取taskplan定时设置插件
 git clone --depth=1 -b master https://github.com/sirpdboy/luci-app-taskplan package/luci-app-taskplan
 # 设备关机功能
-git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci-app-poweroffdevice
+git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice package/luci-app-poweroffdevice
 # 添加adguardhome,bypass，文件管理助手等
 #luci-app-adguardhome luci-app-homeproxy
 #git_sparse_clone main https://github.com/kenzok8/small-package luci-app-bypass luci-app-fileassistant luci-app-filebrowser luci-app-timecontrol luci-app-control-timewol
@@ -49,14 +49,14 @@ git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki pack
 # 添加momo
 #git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-momo package/OpenWrt-momo
 # 添加openclash
-git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
+git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-openclash
 # 添加istore
-git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
-git_sparse_clone main https://github.com/linkease/istore luci
+git_sparse_clone main https://github.com/linkease/istore-ui package/app-store-ui
+git_sparse_clone main https://github.com/linkease/istore package/luci
 # 添加ssrplus
 #git clone --depth=1 -b master https://github.com/fw876/helloworld package/luci-app-ssr-plus
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/openwrt-passwall
-git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall luci-app-passwall
-#git_sparse_clone main https://github.com/xiaorouji/openwrt-passwall2 luci-app-passwall2
+git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+#git_sparse_clone main https://github.com/xiaorouji/openwrt-passwall2 package/luci-app-passwall2
 # 添加应用管理
 #git clone --depth=1 -b master https://github.com/destan19/OpenAppFilter package/OpenAppFilter
