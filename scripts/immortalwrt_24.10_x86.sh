@@ -38,9 +38,9 @@ git clone --depth=1 -b main https://github.com/gdy666/luci-app-lucky package/luc
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/sirpdboy/luci-app-advancedplus package/luci-app-advancedplus
 # 拉取taskplan定时设置插件
-git clone --depth=1 -b master https://github.com/sirpdboy/luci-app-taskplan package/luci-app-taskplan
+git_sparse_clone master https://github.com/sirpdboy/luci-app-taskplan luci-app-taskplan
 # 设备关机功能
-git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice package/luci-app-poweroffdevice
+git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci-app-poweroffdevice
 # 添加adguardhome,bypass，文件管理助手等
 #luci-app-adguardhome luci-app-homeproxy
 #git_sparse_clone main https://github.com/kenzok8/small-package luci-app-bypass luci-app-fileassistant luci-app-filebrowser luci-app-timecontrol luci-app-control-timewol
@@ -51,12 +51,12 @@ git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki pack
 # 添加openclash
 git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
 # 添加istore
-git_sparse_clone main https://github.com/linkease/istore-ui package/app-store-ui
-git_sparse_clone main https://github.com/linkease/istore package/luci
+git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+git_sparse_clone main https://github.com/linkease/istore luci
 # 添加ssrplus
 #git clone --depth=1 -b master https://github.com/fw876/helloworld package/luci-app-ssr-plus
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
-#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
+git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall luci-app-passwall
+#git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall2 luci-app-passwall2
 # 添加应用管理
 #git clone --depth=1 -b master https://github.com/destan19/OpenAppFilter package/OpenAppFilter
