@@ -55,7 +55,7 @@ git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
 git_sparse_clone main https://github.com/linkease/istore luci
 # 添加ssrplus
 #git clone --depth=1 -b master https://github.com/fw876/helloworld package/luci-app-ssr-plus
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/openwrt-passwall-packages
 git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall luci-app-passwall
 #git_sparse_clone main https://github.com/Openwrt-Passwall/openwrt-passwall2 luci-app-passwall2
 # 添加应用管理
