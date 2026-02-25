@@ -1,26 +1,26 @@
-name: immortalwrt-24.10-docker-x86
+name: immortalwrt-25.12-x86-lite
 on:
   workflow_dispatch:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH: openwrt-25.12
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: configs/immortalwrt_24.10_docker_x86.config
+  CONFIG_FILE: configs/immortalwrt_25.12_x86.config
   DIY_P1_SH: scripts/sh/immortalwrt_diy-part1.sh
-  DIY_P2_SH: scripts/immortalwrt_24.10_x86.sh
+  DIY_P2_SH: scripts/immortalwrt_25.12_x86.sh
   CLASH_KERNEL: amd64
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
   # 修改为精简版对应的英文名 Minimal
-  FIRMWARE_TAG: immortalwrt-x86-docker
+  FIRMWARE_TAG: immortalwrt-25.12-x86-lite
   TZ: Asia/Shanghai
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    # 必须显式声明写入权限，否则无法执行删除旧 Release 的操作
+    # 【检查点】必须拥有写入权限
     permissions:
       contents: write
 
@@ -64,7 +64,7 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        # 记录源码信息用于 Release 描述
+        # 提取源码信息用于 Release 描述
         echo "COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")" >> $GITHUB_ENV
         echo "COMMIT_DATE=$(git show -s --date=short --format="%ci")" >> $GITHUB_ENV
         echo "COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")" >> $GITHUB_ENV
@@ -138,7 +138,8 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json
+        # 容错性清理
+        rm -rf packages *.buildinfo *.manifest *kernel.bin *rootfs.img.gz profiles.json sha256sums
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
     - name: Upload Firmware To Release
@@ -146,7 +147,7 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        # 使用运行编号确保 Tag 唯一且带序号，防止覆盖
+        # 【检查点】带编号的唯一 Tag，allowUpdates 为 false
         tag: ${{ env.FIRMWARE_TAG }}-${{ github.run_number }}
         allowUpdates: false
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -156,7 +157,7 @@ jobs:
           ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           - 📅 源码日期: ${{ env.COMMIT_DATE }}
-          - ⚙️ 构建编号: ${{ github.run_number }}
+          - ⚙️ 不带Docker
           - 🌐 默认地址: 192.168.100.252
           - 🔑 默认密码: 空
 
@@ -165,8 +166,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 1. 获取属于该机型的所有 Release，并按创建时间倒序排列
-        # 2. 使用 -r 确保输出的是原始字符串
+        # 【检查点】健壮的排序与清理逻辑
         RELEASES=$(gh release list --limit 100 --json tagName,createdAt --jq ".[] | select(.tagName | startswith(\"${{ env.FIRMWARE_TAG }}-\"))" | \
                   jq -r -s 'sort_by(.createdAt) | reverse | .[].tagName')
         
