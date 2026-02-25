@@ -157,7 +157,7 @@ jobs:
           ### 📒 固件信息
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           - 📅 源码日期: ${{ env.COMMIT_DATE }}
-          - ⚙️ 不带Docker
+          - ⚙️ 构建编号: ${{ github.run_number }}
           - 🌐 默认地址: 192.168.100.252
           - 🔑 默认密码: 空
 
