@@ -133,7 +133,7 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 # 特别注意：iStore 的目录在仓库里叫 luci，移动到 package 后我们给它改个名防止冲突
 #[ -d package/luci ] && mv package/luci package/luci-app-istore
 # 添加 homeproxy msd_lite timewol diskman
-git_sparse_clone main https://github.com/kenzok8/jell luci-app-homeproxy luci-app-msd_lite msd_lite luci-app-timewol luci-app-diskman
+git_sparse_clone main https://github.com/kenzok8/small-package luci-app-homeproxy luci-app-msd_lite msd_lite luci-app-timewol luci-app-diskman
 
 # 添加rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/luci-app-rtp2httpd
