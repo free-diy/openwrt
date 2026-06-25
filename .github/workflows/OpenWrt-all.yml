@@ -298,7 +298,6 @@ jobs:
           if [ -n "$CACHES" ]; then
             for cache in $CACHES; do
               echo "🗑️ 正在尝试删除旧 $TYPE 缓存: $cache"
-              # 不再默默忽略错误，把成功或失败的状态打印出来
               if gh cache delete "$cache"; then
                 echo "✅ 成功删除老旧缓存: $cache"
               else
