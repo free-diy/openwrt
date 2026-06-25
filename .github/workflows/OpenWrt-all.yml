@@ -293,15 +293,18 @@ jobs:
           local KEYWORD=$2
           echo "▶️ 开始检查 $TYPE 缓存..."
           
-          # 直接提取包含设备名和关键词的所有缓存 Key
-          CACHES=$(gh cache list --limit 100 | grep "${{ env.TARGET_ID }}" | grep "$KEYWORD" | awk '{print $1}' || true)
+          CACHES=$(gh cache list --limit 100 --json key -q '.[].key' | grep "${{ env.TARGET_ID }}" | grep "$KEYWORD" || true)
           
           if [ -n "$CACHES" ]; then
             for cache in $CACHES; do
-              echo "🗑️ 正在删除旧 $TYPE 缓存: $cache"
-              gh cache delete "$cache" || true
+              echo "🗑️ 正在尝试删除旧 $TYPE 缓存: $cache"
+              # 不再默默忽略错误，把成功或失败的状态打印出来
+              if gh cache delete "$cache"; then
+                echo "✅ 成功删除老旧缓存: $cache"
+              else
+                echo "⚠️ 无法删除: $cache (🔒此缓存已被当前工作流还原并锁定)"
+              fi
             done
-            echo "✅ $TYPE 旧缓存已全部清空"
           else
             echo "🔍 未发现历史 $TYPE 缓存"
           fi
@@ -310,5 +313,5 @@ jobs:
         clean_cache "dl源码" "-dl-"
         clean_cache "ccache编译" "-cache-"
         
-        echo "✅ 缓存清理步骤结束 (全新缓存将在稍后的 Post-run 阶段自动生成并上传)"
+        echo "✅ 缓存清理步骤结束 (全新缓存将在稍后的 Post-run 阶段自动生成)"
         echo "=========================================="
