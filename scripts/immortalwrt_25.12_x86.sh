@@ -153,15 +153,6 @@ git_sparse_clone main https://github.com/linkease/istore luci
 #rm -rf package/all-proxy/mihomo
 rm -rf package/helloworld/mihomo
 
-
-# ==================================================================
-# 1. 全通用免疫版：利用正则强制 shadowsocksr-libev 跳过 Hash 校验
-# ==================================================================
-#find ./ -type f -path "*/shadowsocksr-libev/Makefile" | while read -r target_file; do
-#    sed -i -E 's/[0-9a-f]{64}/skip/g' "$target_file" || true
-#    sed -i -E 's/^[[:space:]]*PKG_HASH.*/PKG_HASH:=skip/g' "$target_file" || true
-#done
-
 # ==================================================================
 # 2. 强制修复 Passwall 关闭时多节点分流残留孤儿进程的 Bug（全核心覆盖版）
 # ==================================================================
