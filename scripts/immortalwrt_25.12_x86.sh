@@ -105,11 +105,11 @@ git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus pa
 # 添加QiuSimons大鹅
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-daed package/openwrt-daed
 # 添加Passwall 及其依赖
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall12-luci
+#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall12-luci
 # 添加ssrplus
-git clone --depth=1 -b dev https://github.com/fw876/helloworld.git package/helloworld
+#git clone --depth=1 -b dev https://github.com/fw876/helloworld.git package/helloworld
 # 添加中文版netdata
 #git clone --depth=1 -b master https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
 # 添加应用管理
@@ -117,7 +117,7 @@ git clone --depth=1 -b dev https://github.com/fw876/helloworld.git package/hello
 # 添加momo
 #git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-momo package/OpenWrt-momo
 # 添加壁虎合集
-#git clone --depth=1 -b main https://github.com/free-diy/all-proxy package/all-proxy
+git clone --depth=1 -b main https://github.com/free-diy/all-proxy package/all-proxy
 # 添加nikki
 #git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
 git_sparse_clone main https://github.com/nikkinikki-org/OpenWrt-nikki luci-app-nikki mihomo-meta nikki
