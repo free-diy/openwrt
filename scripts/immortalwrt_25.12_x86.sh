@@ -152,3 +152,9 @@ git_sparse_clone main https://github.com/linkease/istore luci
 # 8. 删除多余的插件
 #rm -rf package/all-proxy/mihomo
 rm -rf package/helloworld/mihomo
+
+# 9. 强制修复 Passwall 关闭时多节点分流残留孤儿进程的 Bug
+PASSWALL_INIT=$(find . -name "passwall.init" -o -name "passwall" | grep "init.d/passwall" | head -n 1)
+if [ -n "$PASSWALL_INIT" ]; then
+    sed -i '/unset_lock/i \	# ======= 强制清理 Passwall 残留进程及一切守护子进程 =======\n\tkillall -9 monitor.sh 2>/dev/null\n\tpkill -f "passwall" 2>/dev/null\n\tkillall -9 hysteria 2>/dev/null\n\tkillall -9 sing-box 2>/dev/null\n\tkillall -9 xray 2>/dev/null\n\tkillall -9 ss-local 2>/dev/null\n\trm -rf /tmp/etc/passwall/* 2>/dev/null\n\t# ==========================================================' "$PASSWALL_INIT"
+fi
