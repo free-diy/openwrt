@@ -153,14 +153,20 @@ git_sparse_clone main https://github.com/linkease/istore luci
 #rm -rf package/all-proxy/mihomo
 rm -rf package/helloworld/mihomo
 
-# 9. 强制修复 Passwall 关闭时多节点分流残留孤儿进程的 Bug
-SSR_MAKEFILE=$(find . -name "Makefile" | grep "shadowsocksr-libev/Makefile" | head -n 1)
-if [ -n "$SSR_MAKEFILE" ]; then
-    echo "找到 shadowsocksr-libev Makefile，正在注入免校验补丁..."
-    # 强制将 PKG_HASH 覆写为 skip
-    sed -i 's/^PKG_HASH:=.*/PKG_HASH:=skip/g' "$SSR_MAKEFILE"
-    echo "最新 Makefile 内容验证："
-    cat "$SSR_MAKEFILE" | grep "PKG_HASH:="
-else
-    echo "错误：未能在当前目录找到 shadowsocksr-libev 的 Makefile！"
+
+
+# ==================================================================
+# 1. 全通用免疫版：利用正则强制 shadowsocksr-libev 跳过 Hash 校验
+# ==================================================================
+find ./ -type f -path "*/shadowsocksr-libev/Makefile" | while read -r target_file; do
+    sed -i -E 's/[0-9a-f]{64}/skip/g' "$target_file" || true
+    sed -i -E 's/^[[:space:]]*PKG_HASH.*/PKG_HASH:=skip/g' "$target_file" || true
+done
+
+# ==================================================================
+# 2. 强制修复 Passwall 关闭时多节点分流残留孤儿进程的 Bug（全核心覆盖版）
+# ==================================================================
+PASSWALL_INIT=$(find . -name "passwall.init" -o -name "passwall" | grep "init.d/passwall" | head -n 1)
+if [ -n "$PASSWALL_INIT" ]; then
+    sed -i '/unset_lock/i \	# ======= 强制清理 Passwall 残留进程及一切守护子进程 =======\n\tkillall -9 monitor.sh 2>/dev/null\n\tpkill -f "passwall" 2>/dev/null\n\tkillall -9 hysteria 2>/dev/null\n\tkillall -9 sing-box 2>/dev/null\n\tkillall -9 xray 2>/dev/null\n\tkillall -9 ss-local 2>/dev/null\n\trm -rf /tmp/etc/passwall/* 2>/dev/null\n\t# ==========================================================' "$PASSWALL_INIT"
 fi
