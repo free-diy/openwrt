@@ -298,7 +298,6 @@ jobs:
           if [ -n "$CACHES" ]; then
             mapfile -t CACHE_ARRAY <<< "$CACHES"
             
-            # 仅保留最新的 1 个历史缓存（加上本次工作流结束时自动生成的 1 个新缓存，最终共保留 2 个）
             RETAIN_COUNT=1
             
             if [ ${#CACHE_ARRAY[@]} -le $RETAIN_COUNT ]; then
@@ -308,12 +307,8 @@ jobs:
             
             for ((i=$RETAIN_COUNT; i<${#CACHE_ARRAY[@]}; i++)); do
               cache="${CACHE_ARRAY[$i]}"
-              echo "🗑️ 正在尝试删除老旧 $TYPE 缓存: $cache"
-              if gh cache delete "$cache"; then
-                echo "✅ 成功删除: $cache"
-              else
-                echo "⚠️ 无法删除: $cache (🔒可能被当前工作流锁定)"
-              fi
+              echo "🗑️ 正在尝试删除多余的 $TYPE 缓存: $cache"
+              gh cache delete "$cache" || echo "⚠️ 无法删除: $cache (🔒可能被当前工作流锁定)"
             done
           else
             echo "🔍 未发现历史 $TYPE 缓存"
@@ -325,7 +320,4 @@ jobs:
         clean_cache "ccache编译" "-cache-"
         
         echo "✅ 缓存清理步骤结束"
-        echo "=========================================="
-        
-        echo "✅ 缓存清理步骤结束 (全新缓存将在稍后的 Post-run 阶段自动生成)"
         echo "=========================================="
