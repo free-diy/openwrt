@@ -281,7 +281,7 @@ jobs:
         echo "=========================================="
 
     - name: 13. 清理同设备旧缓存 (Caches)
-      if: steps.compile.outputs.status == 'success' && !cancelled()
+      if: always() && !cancelled()
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -293,15 +293,26 @@ jobs:
           local KEYWORD=$2
           echo "▶️ 开始检查 $TYPE 缓存..."
           
-          CACHES=$(gh cache list --limit 100 --json key -q '.[].key' | grep "${{ env.TARGET_ID }}" | grep "$KEYWORD" || true)
+          CACHES=$(gh cache list --limit 100 --json key,createdAt -q 'sort_by(.createdAt) | reverse | .[].key' | grep "${{ env.TARGET_ID }}" | grep "$KEYWORD" || true)
           
           if [ -n "$CACHES" ]; then
-            for cache in $CACHES; do
-              echo "🗑️ 正在尝试删除旧 $TYPE 缓存: $cache"
+            mapfile -t CACHE_ARRAY <<< "$CACHES"
+            
+            # 仅保留最新的 1 个历史缓存（加上本次工作流结束时自动生成的 1 个新缓存，最终共保留 2 个）
+            RETAIN_COUNT=1
+            
+            if [ ${#CACHE_ARRAY[@]} -le $RETAIN_COUNT ]; then
+              echo "✨ $TYPE 历史缓存数量未超限，无需清理。"
+              return
+            fi
+            
+            for ((i=$RETAIN_COUNT; i<${#CACHE_ARRAY[@]}; i++)); do
+              cache="${CACHE_ARRAY[$i]}"
+              echo "🗑️ 正在尝试删除老旧 $TYPE 缓存: $cache"
               if gh cache delete "$cache"; then
-                echo "✅ 成功删除老旧缓存: $cache"
+                echo "✅ 成功删除: $cache"
               else
-                echo "⚠️ 无法删除: $cache (🔒此缓存已被当前工作流还原并锁定)"
+                echo "⚠️ 无法删除: $cache (🔒可能被当前工作流锁定)"
               fi
             done
           else
@@ -310,7 +321,11 @@ jobs:
         }
         
         clean_cache "dl源码" "-dl-"
+        clean_cache "feeds目录" "-feeds-"
         clean_cache "ccache编译" "-cache-"
+        
+        echo "✅ 缓存清理步骤结束"
+        echo "=========================================="
         
         echo "✅ 缓存清理步骤结束 (全新缓存将在稍后的 Post-run 阶段自动生成)"
         echo "=========================================="
