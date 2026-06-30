@@ -14,7 +14,6 @@ on:
           - 'n60-pro_daed'
           - 'openwrt'
 
-# 并发控制：同一时间只允许一个相同的工作流运行，新任务会掐断旧任务
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -285,18 +284,12 @@ jobs:
           local KEYWORD=$2
           echo "▶️ 开始检查 $TYPE 缓存..."
           
-          # 【修改点 1】: 放弃易错的 grep 过滤。使用原生 JQ 语法精确定位目标设备和关键词，直接提取纯数字的 cache id，从源头避免特殊字符和包含空格导致的误判。
           JQ_QUERY="sort_by(.createdAt) | reverse | .[] | select(.key | contains(\"${{ env.TARGET_ID }}\") and contains(\"$KEYWORD\")) | .id"
           CACHE_IDS=$(gh cache list --limit 100 --json id,key,createdAt -q "$JQ_QUERY" || true)
           
           if [ -n "$CACHE_IDS" ]; then
             mapfile -t CACHE_ARRAY <<< "$CACHE_IDS"
             
-            # 【修改点 2】: 逻辑闭环解释。
-            # Github Actions 严格禁止删除“在当前工作流中刚刚被 restore (恢复) 过的缓存” (被判定为锁定状态)。
-            # 我们将 RETAIN_COUNT 设为 1，专门保留这份锁定的缓存以防报红，然后删掉所有比它更早的缓存。
-            # 当前工作流彻底结束后（Post-Run 阶段），Action 会自动保存 1 份全新缓存。
-            # 因此：旧的 1 份 + 新的 1 份 = 长期稳定维持在 2 份极简状态（即用户体感上的“最后一次”旧缓存与最新生成的）。
             RETAIN_COUNT=1
             
             if [ ${#CACHE_ARRAY[@]} -le $RETAIN_COUNT ]; then
@@ -308,7 +301,6 @@ jobs:
             
             for ((i=$RETAIN_COUNT; i<${#CACHE_ARRAY[@]}; i++)); do
               cache_id="${CACHE_ARRAY[$i]}"
-              # 【修改点 3】: 将 gh cache delete <key> 改为更为安全和绝对唯一对应的 gh cache delete <id>，彻底杜绝“由于多个分支具有同名前缀导致指令报错”的积压顽疾。
               echo "🗑️ 正在尝试删除旧 $TYPE 缓存 (ID: $cache_id)..."
               gh cache delete "$cache_id" || echo "⚠️ 无法删除: ID $cache_id (🔒可能被锁定或已过期)"
             done
