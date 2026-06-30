@@ -13,7 +13,7 @@ rm -rf feeds/packages/net/dae
 rm -rf feeds/luci/applications/luci-app-daed
 rm -rf feeds/packages/net/daed
 #rm -rf feeds/packages/lang/golang
-rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls,mosdns}
+rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
 
 # 3. 增强版稀疏克隆函数 (参数1是分支名, 参数2是仓库地址, 参数3是子目录，同一个仓库下载多个文件夹直接在后面跟文件名或路径，空格分开)
@@ -101,12 +101,12 @@ git clone --depth=1 -b main https://github.com/gdy666/luci-app-lucky package/luc
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
 # 添加kenzok8大鹅
-#git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
+git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
 # 添加QiuSimons大鹅
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-daed package/openwrt-daed
 # 添加Passwall 及其依赖
-#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
-#git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
 #git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall12-luci
 # 添加ssrplus
 #git clone --depth=1 -b dev https://github.com/fw876/helloworld.git package/helloworld
@@ -117,9 +117,9 @@ git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus pa
 # 添加momo
 #git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-momo package/OpenWrt-momo
 # 添加壁虎合集
-git clone --depth=1 -b main https://github.com/free-diy/all-proxy package/all-proxy
+#git clone --depth=1 -b main https://github.com/free-diy/all-proxy package/all-proxy
 # 添加nikki
-#git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
+git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
 #git_sparse_clone main https://github.com/nikkinikki-org/OpenWrt-nikki luci-app-nikki mihomo-meta nikki
 # 添加openclash
 git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
