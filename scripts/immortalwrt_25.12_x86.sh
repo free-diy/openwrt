@@ -12,8 +12,6 @@ rm -rf feeds/luci/applications/luci-app-dae
 rm -rf feeds/packages/net/dae
 rm -rf feeds/luci/applications/luci-app-daed
 rm -rf feeds/packages/net/daed
-rm -rf feeds/luci/applications/luci-app-ddns-go
-rm -rf feeds/packages/net/ddns-go
 #rm -rf feeds/packages/lang/golang
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
@@ -125,8 +123,6 @@ git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki pack
 #git_sparse_clone main https://github.com/nikkinikki-org/OpenWrt-nikki luci-app-nikki mihomo-meta nikki
 # 添加openclash
 git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
-# 添加ddns-go
-git_sparse_clone master https://github.com/kenzok8/openwrt-packages ddns-go luci-app-ddns-go
 # 添加taskplan定时设置插件
 git_sparse_clone main https://github.com/sirpdboy/luci-app-taskplan luci-app-taskplan
 # 添加设备关机功能
