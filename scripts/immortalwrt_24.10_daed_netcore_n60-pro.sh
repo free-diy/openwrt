@@ -106,7 +106,7 @@ git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/ope
 # 添加QiuSimons大鹅
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-daed package/openwrt-daed
 # 添加nikki
-#git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
+git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
 # 添加Passwall 及其依赖
 #git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
 #git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
