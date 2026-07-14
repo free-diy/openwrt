@@ -275,19 +275,20 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "=========================================="
-        echo "🧹 正在清理设备 [${{ env.TARGET_ID }}] 的旧缓存..."
+        echo "🧹 正在清理旧缓存..."
         
         clean_cache() {
           local TYPE=$1
           local KEYWORD=$2
+          local TARGET_MATCH=${3:-${{ env.TARGET_ID }}} 
+          
           echo "▶️ 开始检查 $TYPE 缓存..."
           
-          JQ_QUERY=".[] | select(.key | contains(\"${{ env.TARGET_ID }}\") and contains(\"$KEYWORD\")) | .key"
+          JQ_QUERY=".[] | select(.key | contains(\"$TARGET_MATCH\") and contains(\"$KEYWORD\")) | .key"
           CACHE_KEYS=$(gh cache list --limit 500 --json key,createdAt -q "sort_by(.createdAt) | reverse | $JQ_QUERY" || true)
           
           if [ -n "$CACHE_KEYS" ]; then
             CACHE_ARRAY=($CACHE_KEYS)
-            
             RETAIN_COUNT=1
             
             if [ ${#CACHE_ARRAY[@]} -le $RETAIN_COUNT ]; then
@@ -307,7 +308,8 @@ jobs:
           fi
         }
         
-        clean_cache "dl源码" "-global-"
+        clean_cache "dl源码" "-global-" "global"
+        
         clean_cache "feeds目录" "-feeds-"
         clean_cache "ccache编译" "-cache-"
         
