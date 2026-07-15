@@ -281,6 +281,7 @@ jobs:
           local TYPE=$1
           local KEYWORD=$2
           local TARGET_MATCH=${3:-${{ env.TARGET_ID }}} 
+          local RETAIN_COUNT=${4:-1}
           
           echo "▶️ 开始检查 $TYPE 缓存..."
           
@@ -289,7 +290,6 @@ jobs:
           
           if [ -n "$CACHE_KEYS" ]; then
             CACHE_ARRAY=($CACHE_KEYS)
-            RETAIN_COUNT=1
             
             if [ ${#CACHE_ARRAY[@]} -le $RETAIN_COUNT ]; then
               echo "✨ $TYPE 历史缓存数量未超限，无需清理。"
@@ -308,7 +308,7 @@ jobs:
           fi
         }
         
-        clean_cache "dl源码" "-global-" "global"
+        clean_cache "dl源码" "-global-${{ env.REPO_BRANCH }}-dl-" "global" 0
         
         clean_cache "feeds目录" "-feeds-"
         clean_cache "ccache编译" "-cache-"
