@@ -8,10 +8,10 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-openclash
 rm -rf feeds/luci/applications/luci-app-passwall
-rm -rf feeds/luci/applications/luci-app-dae
-rm -rf feeds/packages/net/dae
-rm -rf feeds/luci/applications/luci-app-daed
-rm -rf feeds/packages/net/daed
+#rm -rf feeds/luci/applications/luci-app-dae
+#rm -rf feeds/packages/net/dae
+#rm -rf feeds/luci/applications/luci-app-daed
+#rm -rf feeds/packages/net/daed
 #rm -rf feeds/packages/lang/golang
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
@@ -101,7 +101,7 @@ function git_sparse_clone() {
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
 # 添加kenzok8大鹅
-git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
+#git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
 # 添加QiuSimons大鹅
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-daed package/openwrt-daed
 # 添加Passwall 及其依赖
