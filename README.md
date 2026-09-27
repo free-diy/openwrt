@@ -1,6 +1,6 @@
 # 自用openwrt
 ```bash
-git clone -b openwrt-24.10 --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt 24.10
+git clone -b openwrt-25.12 --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt 25.12
 ```
 cd
 ```bash
