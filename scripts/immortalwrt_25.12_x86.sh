@@ -100,6 +100,8 @@ function git_sparse_clone() {
 #git clone --depth=1 -b main https://github.com/gdy666/luci-app-lucky package/lucky
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
+# 添加 honk
+#git clone --depth=1 -b main https://github.com/daeuniverse/openwrt-packages package/openwrt-honk
 # 添加kenzok8大鹅
 #git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
 # 添加QiuSimons大鹅
