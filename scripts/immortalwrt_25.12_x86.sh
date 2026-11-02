@@ -100,13 +100,10 @@ function git_sparse_clone() {
 #git clone --depth=1 -b main https://github.com/gdy666/luci-app-lucky package/lucky
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
-# 添加 honk
-#git clone --depth=1 -b main https://github.com/daeuniverse/openwrt-packages package/openwrt-honk
-#git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
-# 添加kenzok8大鹅
-#git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
-# 添加QiuSimons大鹅
-#git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-daed package/openwrt-daed
+# 添加 honk 大鹅
+git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
+git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-dae package/luci-app-dae
+git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
 # 添加Passwall 及其依赖
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
