@@ -101,6 +101,9 @@ function git_sparse_clone() {
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
 # 添加 honk 大鹅
+#git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk || {
+#    echo "⚠️ luci-app-honk 克隆失败，已跳过该插件"
+#}
 git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
 git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-dae package/luci-app-dae
 git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
