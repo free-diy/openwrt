@@ -97,6 +97,11 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo npm install -g pnpm
 
+    - name: 4.1 安装官方 Zig 编译器
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.13.0
+
     - name: 5. 克隆源码与环境准备
       run: |
         git clone -b $REPO_BRANCH --single-branch --depth 1 $REPO_URL $OPENWRT_NAME
