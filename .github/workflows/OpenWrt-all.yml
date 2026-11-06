@@ -193,15 +193,6 @@ jobs:
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
 
-        if [ ! -d "package/dae/src" ]; then
-          git clone --recurse-submodules https://github.com/daeuniverse/dae package/dae/src
-        fi
-
-         if [ ! -d "package/honk/src" ]; then
-          git clone --recurse-submodules https://github.com/daeuniverse/honk package/dae/src
-        fi       
-
-
         # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
         echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
