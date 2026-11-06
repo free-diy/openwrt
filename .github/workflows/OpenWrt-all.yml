@@ -245,6 +245,21 @@ jobs:
         fi
         # ---------------------------------------------
 
+    - name: 补全 dae 和 honk 源码
+      run: |
+        cd "${{ env.OPENWRT_PATH }}"
+        
+        # 1. 强制清理并重新克隆 dae 源码（带子模块）
+        echo "📥 正在准备 dae 源码..."
+        rm -rf package/dae/src
+        git clone --recurse-submodules https://github.com/daeuniverse/dae package/dae/src
+
+        # 2. 强制清理并重新克隆 honk 源码
+        echo "📥 正在准备 honk 源码..."
+        rm -rf package/honk/src
+        git clone https://github.com/daeuniverse/honk package/honk/src
+        
+
     - name: 9. 开始编译
       id: compile
       run: |
