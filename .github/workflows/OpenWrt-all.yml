@@ -193,8 +193,8 @@ jobs:
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
 
-        # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
-        echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
+        # --- 整合 luci-app-honk 的宿主机编译环境依赖 ---
+        echo "🔧 正在搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
         # 1. 安装 Rust 环境（如果尚未安装）
         if ! command -v rustup &> /dev/null; then
