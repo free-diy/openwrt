@@ -196,16 +196,27 @@ jobs:
         # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
         echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
-        # 1. 安装 Rust 环境并直接设置为最新稳定版 (stable)
+    - name: 安装并强制激活高版本 Rust
+      run: |
+        # 1. 安装 rustup（如果未安装）并指定默认工具链为 stable 或 1.98.0
         if ! command -v rustup &> /dev/null; then
-          # 使用 --default-toolchain stable 自动获取并安装最新稳定版
-          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
         else
-          # 如果环境已存在 rustup，则更新并切换到 stable
           rustup update stable
           rustup default stable
-        fi
+        end
+        
+        # 2. 必须将 $HOME/.cargo/bin 放到 PATH 的最前面，确保优先调用
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
         export PATH="$HOME/.cargo/bin:$PATH"
+        
+        # 3. 强制当前 shell 覆盖工具链
+        rustup override set stable
+        
+        # 4. 打印版本进行最终确认（日志里必须看到 >= 1.98.0）
+        rustc --version
+        cargo --version
+
         
         # 验证当前的 Rust 版本，确保其满足构建要求
         rustc --version
