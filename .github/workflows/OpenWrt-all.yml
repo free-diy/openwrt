@@ -241,7 +241,7 @@ jobs:
           sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
           echo "✅ honk 专用宿主机工具链安装完成！"
         else
-          echo "⚠️ 全盘未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
+          echo "⚠️ 指定目录未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
         fi
         # ---------------------------------------------
 
