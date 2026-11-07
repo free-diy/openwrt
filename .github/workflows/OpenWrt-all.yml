@@ -196,12 +196,20 @@ jobs:
         # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
         echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
-        # 1. 安装 Rust 环境（如果尚未安装）
+        # 1. 安装 Rust 环境并直接设置为最新稳定版 (stable)
         if ! command -v rustup &> /dev/null; then
-          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+          # 使用 --default-toolchain stable 自动获取并安装最新稳定版
+          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+        else
+          # 如果环境已存在 rustup，则更新并切换到 stable
+          rustup update stable
+          rustup default stable
         fi
         export PATH="$HOME/.cargo/bin:$PATH"
         
+        # 验证当前的 Rust 版本，确保其满足构建要求
+        rustc --version
+
         # 2. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
         HONK_TOOLCHAIN_PATH=""
         for candidate in \
