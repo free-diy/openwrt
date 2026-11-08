@@ -219,30 +219,7 @@ jobs:
         rustc --version
         cargo --version
 
-        # 5. 自动获取并安装最新稳定版 bpf-linker
-        echo "📦 正在自动获取并安装最新稳定版 bpf-linker..."
-        sudo apt-get install -y zstd curl jq || true
-        
-        BPF_LATEST_TAG=$(curl -sI https://github.com/aya-rs/bpf-linker/releases/latest | grep -i "^location:" | awk -F'/' '{print $NF}' | tr -d '\r')
-        echo "✅ 检测到 bpf-linker 最新版本: ${BPF_LATEST_TAG}"
-        
-        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
-        sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
-        
-        # 6. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
-        echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
-        ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
-        
-        if [ -z "$ZIG_VERSION" ] || [ "$ZIG_VERSION" = "null" ]; then
-          ZIG_VERSION="0.14.1"
-        fi
-        echo "✅ 最终选择的 Zig 稳定版本: ${ZIG_VERSION}"
-        
-        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/zig.tar.xz "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
-        sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
-        sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
-        
-        # 7. 配置 Cargo 镜像加速（使用国内源，彻底解决 504 超时问题）
+        # 5. 配置 Cargo 镜像加速（使用国内源，彻底解决 504 超时问题）
         mkdir -p $HOME/.cargo
         cat << 'EOF' > $HOME/.cargo/config.toml
         [source.crates-io]
@@ -258,6 +235,29 @@ jobs:
         protocol = "sparse"
         EOF
         echo "✅ Cargo 已经成功切换为 rsproxy 国内加速源！"
+
+        # 6. 自动获取并安装最新稳定版 bpf-linker
+        echo "📦 正在自动获取并安装最新稳定版 bpf-linker..."
+        sudo apt-get install -y zstd curl jq || true
+        
+        BPF_LATEST_TAG=$(curl -sI https://github.com/aya-rs/bpf-linker/releases/latest | grep -i "^location:" | awk -F'/' '{print $NF}' | tr -d '\r')
+        echo "✅ 检测到 bpf-linker 最新版本: ${BPF_LATEST_TAG}"
+        
+        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
+        sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
+        
+        # 7. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
+        echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
+        ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
+        
+        if [ -z "$ZIG_VERSION" ] || [ "$ZIG_VERSION" = "null" ]; then
+          ZIG_VERSION="0.14.1"
+        fi
+        echo "✅ 最终选择的 Zig 稳定版本: ${ZIG_VERSION}"
+        
+        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/zig.tar.xz "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
+        sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
+        sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
         echo "✅ 宿主机工具链安装及路径绑定完成！"
         # ---------------------------------------------
