@@ -218,7 +218,7 @@ jobs:
         cargo --version
         
         # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
-        echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
+        echo "🔧 正在指定目录搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
         # 6. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
         HONK_TOOLCHAIN_PATH=""
@@ -259,7 +259,7 @@ jobs:
           sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
           echo "✅ honk 专用宿主机工具链安装完成！"
         else
-          echo "⚠️ 全盘未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
+          echo "⚠️ 指定目录未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
         fi
         # ---------------------------------------------
 
