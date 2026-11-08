@@ -225,21 +225,21 @@ jobs:
         curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
         sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
         
-        # 5. 自动获取并安装最新稳定版 Zig 编译器
-        echo "📦 正在从官方 API 动态获取最新稳定版 Zig 编译器..."
-        ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r '.master.version // .["0.13.0"].version' 2>/dev/null || echo "")
+        # 5. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
+        echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
+        ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
         
-        # 如果从 JSON 获取失败，兜底使用 master 或安全版本
+        # 如果过滤失败，强制安全兜底到 0.14.1（或 0.13.0）
         if [ -z "$ZIG_VERSION" ] || [ "$ZIG_VERSION" = "null" ]; then
           ZIG_VERSION="0.14.1"
         fi
-        echo "✅ 检测到 Zig 最新稳定版本: ${ZIG_VERSION}"
+        echo "✅ 最终选择的 Zig 稳定版本: ${ZIG_VERSION}"
         
         curl --retry 3 --retry-delay 2 -fsSL -o /tmp/zig.tar.xz "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
         sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
         sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
         
-        echo "✅ 宿主机 Rust 及最新稳定版工具链（bpf-linker, Zig）安装完成！"
+        echo "✅ 宿主机工具链安装完成！"
         # ---------------------------------------------
 
     - name: 9. 开始编译
