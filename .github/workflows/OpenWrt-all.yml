@@ -195,10 +195,10 @@ jobs:
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
         
-    - name: 安装 Rust 与最新稳定版 bpf-linker 和 Zig
+    - name: 安装 Rust、rust-src 与最新稳定版 bpf-linker 和 Zig
       run: |
-        # 1. 安装 rustup 并强制指定 stable
-        curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+        # 1. 安装 rustup 并强制指定 stable，同时显式安装核心的 rust-src 组件（eBPF 编译必需）
+        curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --component rust-src --no-modify-path
         
         # 2. 配置环境变量与全局软链接
         CARGO_BIN_DIR="$HOME/.cargo/bin"
@@ -215,22 +215,19 @@ jobs:
         rustup default stable
         rustup override set stable
         
-        # 4. 打印版本确认
+        # 4. 确保 rust-src 组件对当前工具链生效
+        rustup component add rust-src
+        
+        # 5. 打印版本与组件确认
         rustc --version
         cargo --version
+        rustup component list --installed
 
-        # 5. 配置 Cargo 镜像加速（改用 Git 索引源，彻底避免 rsproxy 的 sparse 404 错误）
-        mkdir -p $HOME/.cargo
-        cat << 'EOF' > $HOME/.cargo/config.toml
-        [source.crates-io]
-        replace-with = 'rsproxy-git'
+        # 6. 彻底清理任何可能导致 404 的自定义镜像源，走稳定官方源
+        rm -f $HOME/.cargo/config.toml
+        echo "✅ 已清理旧镜像配置，使用 Cargo 官方源并配齐 rust-src！"
 
-        [source.rsproxy-git]
-        registry = "https://rsproxy.cn/crates.io-index"
-        EOF
-        echo "✅ Cargo 已成功切换为 rsproxy Git 索引加速源！"
-
-        # 6. 自动获取并安装最新稳定版 bpf-linker
+        # 7. 自动获取并安装最新稳定版 bpf-linker
         echo "📦 正在自动获取并安装最新稳定版 bpf-linker..."
         sudo apt-get install -y zstd curl jq || true
         
@@ -240,7 +237,7 @@ jobs:
         curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
         sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
         
-        # 7. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
+        # 8. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
         echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
         ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
         
@@ -253,7 +250,8 @@ jobs:
         sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
         sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
-        echo "✅ 宿主机工具链安装及路径绑定完成！"
+        echo "✅ 宿主机 Rust (含 rust-src)、bpf-linker 及 Zig 安装完成！"
+
         # ---------------------------------------------
 
     - name: 9. 开始编译
