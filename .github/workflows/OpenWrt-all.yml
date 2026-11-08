@@ -92,7 +92,9 @@ jobs:
           -o Dpkg::Options::="--force-confdef" \
           -o Dpkg::Options::="--force-confold" \
           $DEPS
-        
+          
+        sudo apt-get purge -y rustc cargo libstd-rust-* || true
+        sudo apt-get autoremove -y
         sudo -E apt-get -qq autoremove --purge && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
         sudo npm install -g pnpm
@@ -192,25 +194,33 @@ jobs:
         echo "📊 dl 目录缓存体积前 5 排行:"
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
-
-        # --- 整合 luci-app-honk 的宿主机编译环境依赖 ---
-        echo "🔧 正在搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
-        # 1. 安装 Rust 环境并直接设置为最新稳定版 (stable)
-        if ! command -v rustup &> /dev/null; then
-          # 使用 --default-toolchain stable 自动获取并安装最新稳定版
-          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
-        else
-          # 如果环境已存在 rustup，则更新并切换到 stable
-          rustup update stable
-          rustup default stable
-        fi
+    - name: 安装并强制激活高版本 Rust
+      run: |
+        # 1. 安装 rustup 并强制指定 stable
+        curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+        
+        # 2. 配置环境变量
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
         export PATH="$HOME/.cargo/bin:$PATH"
         
-        # 验证当前的 Rust 版本，确保其满足构建要求
+        # 3. 强行将 cargo/rustc 软链接到全局 /usr/local/bin，堵死系统旧版本调用的可能
+        sudo ln -sf "$HOME/.cargo/bin/cargo" /usr/local/bin/cargo
+        sudo ln -sf "$HOME/.cargo/bin/rustc" /usr/local/bin/rustc
+        sudo ln -sf "$HOME/.cargo/bin/rustup" /usr/local/bin/rustup
+        
+        # 4. 强制覆盖当前工具链
+        rustup default stable
+        rustup override set stable
+        
+        # 5. 最终确认版本（此处必须输出大于 1.98.0 的版本，如 1.x.y）
         rustc --version
-
-        # 2. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
+        cargo --version
+        
+        # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
+        echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
+        
+        # 6. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
         HONK_TOOLCHAIN_PATH=""
         for candidate in \
           "package/luci-app-honk/honk/honk_toolchain.sh" \
@@ -223,12 +233,12 @@ jobs:
           fi
         done
         
-        # 如果预置路径未命中，仅在 package 目录下浅层查找，绝不进行全盘耗时扫描
+        # 如果预置路径未命中，仅在 package 目录下浅层查找
         if [ -z "$HONK_TOOLCHAIN_PATH" ] && [ -d "package" ]; then
           HONK_TOOLCHAIN_PATH=$(find package -maxdepth 4 -type f -name "honk_toolchain.sh" | head -n 1)
         fi
         
-        # 3. 如果找到了脚本，则自动执行并安装依赖
+        # 7. 如果找到了脚本，则自动执行并安装依赖
         if [ -n "$HONK_TOOLCHAIN_PATH" ] && [ -f "$HONK_TOOLCHAIN_PATH" ]; then
           HONK_DIR=$(dirname "$HONK_TOOLCHAIN_PATH")
           echo "✅ 成功找到 honk 工具链脚本: $HONK_TOOLCHAIN_PATH (所在目录: $HONK_DIR)"
@@ -249,7 +259,7 @@ jobs:
           sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
           echo "✅ honk 专用宿主机工具链安装完成！"
         else
-          echo "⚠️ 指定目录未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
+          echo "⚠️ 全盘未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
         fi
         # ---------------------------------------------
 
