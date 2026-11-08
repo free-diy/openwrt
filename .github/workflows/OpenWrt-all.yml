@@ -242,6 +242,23 @@ jobs:
         sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
         sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
         
+        # 7. 配置 Cargo 镜像加速（使用国内源，彻底解决 504 超时问题）
+        mkdir -p $HOME/.cargo
+        cat << 'EOF' > $HOME/.cargo/config.toml
+        [source.crates-io]
+        replace-with = 'rsproxy'
+
+        [source.rsproxy]
+        registry = "https://rsproxy.cn/crates.io-index"
+
+        [source.rsproxy-sparse]
+        registry = "sparse+https://rsproxy.cn/index/"
+
+        [registries.rsproxy]
+        protocol = "sparse"
+        EOF
+        echo "✅ Cargo 已经成功切换为 rsproxy 国内加速源！"
+
         echo "✅ 宿主机工具链安装及路径绑定完成！"
         # ---------------------------------------------
 
