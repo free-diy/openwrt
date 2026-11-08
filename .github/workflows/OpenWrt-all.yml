@@ -193,36 +193,37 @@ jobs:
         echo "📊 dl 目录缓存体积前 5 排行:"
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
-
-        # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
-        echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
         
     - name: 安装并强制激活高版本 Rust
       run: |
-        # 1. 安装 rustup（如果未安装）并指定默认工具链为 stable 或 1.98.0
+        # 1. 安装 rustup（如果未安装）并指定默认工具链为 stable
         if ! command -v rustup &> /dev/null; then
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
         else
           rustup update stable
           rustup default stable
         fi
         
-        # 2. 必须将 $HOME/.cargo/bin 放到 PATH 的最前面，确保优先调用
+        # 2. 将 $HOME/.cargo/bin 写入 PATH，并强行软链接到全局 /usr/local/bin 
+        #    （这样可以彻底解决 OpenWrt 编译沙箱隔离导致子进程找不到高版本 rustc 的问题）
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
         export PATH="$HOME/.cargo/bin:$PATH"
+        
+        sudo ln -sf "$HOME/.cargo/bin/cargo" /usr/local/bin/cargo
+        sudo ln -sf "$HOME/.cargo/bin/rustc" /usr/local/bin/rustc
+        sudo ln -sf "$HOME/.cargo/bin/rustup" /usr/local/bin/rustup
         
         # 3. 强制当前 shell 覆盖工具链
         rustup override set stable
         
-        # 4. 打印版本进行最终确认（日志里必须看到 >= 1.98.0）
+        # 4. 打印版本进行最终确认（日志里必须看到最新 stable 或 >= 1.98.0）
         rustc --version
         cargo --version
-
         
-        # 验证当前的 Rust 版本，确保其满足构建要求
-        rustc --version
-
-        # 2. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
+        # --- 整合 luci-app-honk 的宿主机编译环境依赖（支持大范围智能搜索） ---
+        echo "🔧 正在全局搜索并配置 luci-app-honk 所需的宿主机工具链..."
+        
+        # 5. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
         HONK_TOOLCHAIN_PATH=""
         for candidate in \
           "package/luci-app-honk/honk/honk_toolchain.sh" \
@@ -235,12 +236,12 @@ jobs:
           fi
         done
         
-        # 如果预置路径未命中，仅在 package 目录下浅层查找，绝不进行全盘耗时扫描
+        # 如果预置路径未命中，仅在 package 目录下浅层查找
         if [ -z "$HONK_TOOLCHAIN_PATH" ] && [ -d "package" ]; then
           HONK_TOOLCHAIN_PATH=$(find package -maxdepth 4 -type f -name "honk_toolchain.sh" | head -n 1)
         fi
         
-        # 3. 如果找到了脚本，则自动执行并安装依赖
+        # 6. 如果找到了脚本，则自动执行并安装依赖
         if [ -n "$HONK_TOOLCHAIN_PATH" ] && [ -f "$HONK_TOOLCHAIN_PATH" ]; then
           HONK_DIR=$(dirname "$HONK_TOOLCHAIN_PATH")
           echo "✅ 成功找到 honk 工具链脚本: $HONK_TOOLCHAIN_PATH (所在目录: $HONK_DIR)"
