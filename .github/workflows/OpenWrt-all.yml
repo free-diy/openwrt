@@ -197,7 +197,7 @@ jobs:
         
     - name: 安装 Rust、rust-src 与最新稳定版 bpf-linker 和 Zig
       run: |
-        # 1. 安装 rustup 并强制指定 stable，同时显式安装核心的 rust-src 组件（eBPF 编译必需）
+        # 1. 安装 rustup 并强制指定 stable，同时显式安装 core 依赖的 rust-src
         curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --component rust-src --no-modify-path
         
         # 2. 配置环境变量与全局软链接
@@ -218,16 +218,20 @@ jobs:
         # 4. 确保 rust-src 组件对当前工具链生效
         rustup component add rust-src
         
-        # 5. 打印版本与组件确认
+        # 5. 🔴 关键修复：补齐 musl 目标标准库，解决 can't find crate for core 报错
+        rustup target add x86_64-unknown-linux-musl
+        rustup target add aarch64-unknown-linux-musl
+        
+        # 6. 打印版本与组件确认
         rustc --version
         cargo --version
-        rustup component list --installed
+        rustup target list --installed
 
-        # 6. 彻底清理任何可能导致 404 的自定义镜像源，走稳定官方源
+        # 7. 确保彻底清理旧镜像配置，走官方源
         rm -f $HOME/.cargo/config.toml
-        echo "✅ 已清理旧镜像配置，使用 Cargo 官方源并配齐 rust-src！"
+        echo "✅ 已完成 Rust 工具链、src 及 musl 目标架构配置！"
 
-        # 7. 自动获取并安装最新稳定版 bpf-linker
+        # 8. 自动获取并安装最新稳定版 bpf-linker
         echo "📦 正在自动获取并安装最新稳定版 bpf-linker..."
         sudo apt-get install -y zstd curl jq || true
         
@@ -237,7 +241,7 @@ jobs:
         curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
         sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
         
-        # 8. 获取 Zig 正式稳定版（过滤掉 -dev 预览版，防止 404）
+        # 9. 获取 Zig 正式稳定版
         echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
         ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
         
@@ -250,7 +254,7 @@ jobs:
         sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
         sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
-        echo "✅ 宿主机 Rust (含 rust-src)、bpf-linker 及 Zig 安装完成！"
+        echo "✅ 所有工具链及目标平台标准库安装完成！"
 
         # ---------------------------------------------
 
