@@ -107,10 +107,10 @@ git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus pa
 # 添加 honk
 #git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-dae package/luci-app-dae
-git_sparse_clone main https://github.com/daeuniverse/openwrt-packages honk luci-app-honk luci-lib-daeuniverse dae luci-app-dae
+git_sparse_clone main https://github.com/daeuniverse/openwrt-packages honk luci-app-honk luci-lib-daeuniverse dae luci-app-dae vmlinux-btf-builtin
 git clone --recurse-submodules --branch v2.1.1 https://github.com/daeuniverse/dae package/dae/src
 git clone --branch v0.1.0-beta.6 https://github.com/daeuniverse/honk package/honk/src
-git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
+#git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
 # 添加Passwall 及其依赖
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
