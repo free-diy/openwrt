@@ -85,30 +85,32 @@ jobs:
         sudo -E apt-get -qq update
         DEPS=$(curl -fsSL https://raw.githubusercontent.com/free-diy/openwrt/main/depends_ubuntu || echo "")
         if [ -z "$DEPS" ]; then
-          DEPS="ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler dwarves ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev golang-go gperf haveged help2man intltool lib32gcc-s1 libbpf-dev libc6-dev-i386 libclang-dev libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build npm p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd"
+          DEPS="ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler dwarves ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev golang-go gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build npm p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd"
         fi
 
         sudo -E apt-get -qq install -y --no-install-recommends \
           -o Dpkg::Options::="--force-confdef" \
           -o Dpkg::Options::="--force-confold" \
           $DEPS
-          
-        sudo apt-get purge -y rustc cargo libstd-rust-* || true
-        sudo apt-get autoremove -y
+        
         sudo -E apt-get -qq autoremove --purge && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
         sudo npm install -g pnpm
+        
+    - name: 4.1 清理系统自带的旧版 Rust
+      run: |
+        sudo apt-get purge -y rustc cargo libstd-rust-* || true
+        sudo apt-get autoremove -y
+
+    - name: 4.2 安装 Rust 工具链
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchains: stable, nightly
+        components: rust-src
 
     - name: 5. 克隆源码与环境准备
       run: |
-        echo "⏳ 正在克隆仓库: $REPO_URL (分支: $REPO_BRANCH)..."
-        
-        # 使用 timeout 命令限制 5 分钟内必须完成，防止无限死卡
-        timeout 300 git clone -b $REPO_BRANCH --single-branch --depth 1 $REPO_URL $OPENWRT_NAME || {
-          echo "❌ 错误: 源码克隆超时或失败！可能是 GitHub 访问外部仓库网络不通或被限速。"
-          exit 1
-        }
-        
+        git clone -b $REPO_BRANCH --single-branch --depth 1 $REPO_URL $OPENWRT_NAME
         echo "OPENWRT_PATH=${GITHUB_WORKSPACE}/${OPENWRT_NAME}" >> $GITHUB_ENV
         cd "$OPENWRT_NAME"
         echo "COMMIT_DATE=$(git show -s --date=short --format='%ci' | awk '{print $1}')" >> $GITHUB_ENV
@@ -172,11 +174,11 @@ jobs:
         echo "CONFIG_CCACHE=y" >> .config
         make defconfig
         
-        echo "⏳ 正在尝试多线程下载 (j8)..."
-        if ! make download -j8; then
-          echo "⚠️ j8 失败，降级至 j4 重试..."
-          if ! make download -j4; then
-            echo "❌ j4依然失败，进入单线程详细日志模式 (V=s)..."
+        echo "⏳ 正在尝试多线程下载 (j16)..."
+        if ! make download -j16; then
+          echo "⚠️ j16 失败，降级至 j8 重试..."
+          if ! make download -j8; then
+            echo "❌ j8 依然失败，进入单线程详细日志模式 (V=s)..."
             make download -j1 V=s > download.log 2>&1 || {
               tail -n 500 download.log
               exit 1
@@ -194,69 +196,6 @@ jobs:
         echo "📊 dl 目录缓存体积前 5 排行:"
         (du -h dl/* 2>/dev/null | sort -rh | head -n 5) 2>/dev/null || echo "dl 目录为空"
         echo "=========================================="
-        
-    - name: 安装 Rust、rust-src 与最新稳定版 bpf-linker 和 Zig
-      run: |
-        # 1. 安装 rustup 并强制指定 stable，同时显式安装 core 依赖的 rust-src
-        curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --component rust-src --no-modify-path
-        
-        # 2. 配置环境变量与全局软链接
-        CARGO_BIN_DIR="$HOME/.cargo/bin"
-        echo "$CARGO_BIN_DIR" >> $GITHUB_PATH
-        
-        sudo ln -sf "$CARGO_BIN_DIR/cargo" /usr/local/bin/cargo
-        sudo ln -sf "$CARGO_BIN_DIR/rustc" /usr/local/bin/rustc
-        sudo ln -sf "$CARGO_BIN_DIR/rustup" /usr/local/bin/rustup
-        
-        # 3. 将 Rust 绝对路径注入到全局环境变量，供 OpenWrt 编译子进程调用
-        echo "RUSTC=/usr/local/bin/rustc" >> $GITHUB_ENV
-        echo "CARGO=/usr/local/bin/cargo" >> $GITHUB_ENV
-        
-        rustup default stable
-        rustup override set stable
-        
-        # 4. 确保 rust-src 组件对当前工具链生效
-        rustup component add rust-src
-        
-        # 5. 🔴 关键修复：补齐 musl 目标标准库，解决 can't find crate for core 报错
-        rustup target add x86_64-unknown-linux-musl
-        rustup target add aarch64-unknown-linux-musl
-        
-        # 6. 打印版本与组件确认
-        rustc --version
-        cargo --version
-        rustup target list --installed
-
-        # 7. 确保彻底清理旧镜像配置，走官方源
-        rm -f $HOME/.cargo/config.toml
-        echo "✅ 已完成 Rust 工具链、src 及 musl 目标架构配置！"
-
-        # 8. 自动获取并安装最新稳定版 bpf-linker
-        echo "📦 正在自动获取并安装最新稳定版 bpf-linker..."
-        sudo apt-get install -y zstd curl jq || true
-        
-        BPF_LATEST_TAG=$(curl -sI https://github.com/aya-rs/bpf-linker/releases/latest | grep -i "^location:" | awk -F'/' '{print $NF}' | tr -d '\r')
-        echo "✅ 检测到 bpf-linker 最新版本: ${BPF_LATEST_TAG}"
-        
-        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/bpf-linker.tar.zst "https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LATEST_TAG}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
-        sudo tar --zstd -xf /tmp/bpf-linker.tar.zst -C /usr/local/bin
-        
-        # 9. 获取 Zig 正式稳定版
-        echo "📦 正在从官方 API 动态获取 Zig 稳定版..."
-        ZIG_VERSION=$(curl -s https://ziglang.org/download/index.json | jq -r 'to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .key' | head -n 1)
-        
-        if [ -z "$ZIG_VERSION" ] || [ "$ZIG_VERSION" = "null" ]; then
-          ZIG_VERSION="0.14.1"
-        fi
-        echo "✅ 最终选择的 Zig 稳定版本: ${ZIG_VERSION}"
-        
-        curl --retry 3 --retry-delay 2 -fsSL -o /tmp/zig.tar.xz "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
-        sudo tar -xJf /tmp/zig.tar.xz -C /usr/local
-        sudo ln -sf "/usr/local/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
-
-        echo "✅ 所有工具链及目标平台标准库安装完成！"
-
-        # ---------------------------------------------
 
     - name: 9. 开始编译
       id: compile
