@@ -93,11 +93,35 @@ jobs:
           -o Dpkg::Options::="--force-confold" \
           $DEPS
           
-        sudo apt-get purge -y rustc cargo libstd-rust-* || true
-        sudo apt-get autoremove -y
         sudo -E apt-get -qq autoremove --purge && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
         sudo npm install -g pnpm
+
+    - name: 4.1 清理系统自带的旧版 Rust
+      run: |
+        sudo apt-get purge -y rustc cargo libstd-rust-* || true
+        sudo apt-get autoremove -y
+
+    - name: 4.2 安装 Rust 环境与通用 Nightly 工具链
+      run: |
+        if ! command -v rustup &> /dev/null; then
+          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
+        else
+          rustup update stable
+          rustup default stable
+        fi
+        
+        # 将 cargo 路径写入 GITHUB_PATH 确保后续步骤全局可用
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        export PATH="$HOME/.cargo/bin:$PATH"
+        
+        # 安装通用的 nightly 及 rust-src 组件（适配 honk 编译）
+        echo "⏳ 正在安装通用的 nightly 及 rust-src..."
+        rustup toolchain install nightly --component rust-src
+          
+        # 验证版本
+        rustc --version
+        rustup toolchain list   
 
     - name: 5. 克隆源码与环境准备
       run: |
@@ -197,22 +221,8 @@ jobs:
 
         # --- 整合 luci-app-honk 的宿主机编译环境依赖 ---
         echo "🔧 正在搜索并配置 luci-app-honk 所需的宿主机工具链..."
-        
-        # 1. 安装 Rust 环境并直接设置为最新稳定版 (stable)
-        if ! command -v rustup &> /dev/null; then
-          # 使用 --default-toolchain stable 自动获取并安装最新稳定版
-          curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
-        else
-          # 如果环境已存在 rustup，则更新并切换到 stable
-          rustup update stable
-          rustup default stable
-        fi
-        export PATH="$HOME/.cargo/bin:$PATH"
-        
-        # 验证当前的 Rust 版本，确保其满足构建要求
-        rustc --version
 
-        # 2. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
+        # 1. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
         HONK_TOOLCHAIN_PATH=""
         for candidate in \
           "package/luci-app-honk/honk/honk_toolchain.sh" \
@@ -230,7 +240,7 @@ jobs:
           HONK_TOOLCHAIN_PATH=$(find package -maxdepth 4 -type f -name "honk_toolchain.sh" | head -n 1)
         fi
         
-        # 3. 如果找到了脚本，则自动执行并安装依赖
+        # 2. 如果找到了脚本，则自动执行并安装依赖
         if [ -n "$HONK_TOOLCHAIN_PATH" ] && [ -f "$HONK_TOOLCHAIN_PATH" ]; then
           HONK_DIR=$(dirname "$HONK_TOOLCHAIN_PATH")
           echo "✅ 成功找到 honk 工具链脚本: $HONK_TOOLCHAIN_PATH (所在目录: $HONK_DIR)"
