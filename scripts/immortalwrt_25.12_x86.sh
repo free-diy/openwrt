@@ -107,7 +107,7 @@ git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus pa
 #    echo "⚠️ luci-app-honk 克隆失败，已跳过该插件"
 #}
 git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
-git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae luci-app-dae
+git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae luci-app-dae luci-lib-daeuniverse
 git clone --recurse-submodules --branch v2.1.2 https://github.com/daeuniverse/dae dae/src
 #git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-dae package/luci-app-dae
 git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
