@@ -104,9 +104,8 @@ git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
 # 添加 honk 大鹅
 git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
-git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae luci-app-dae luci-lib-daeuniverse
+git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae
 git clone --recurse-submodules --branch v2.1.2 https://github.com/daeuniverse/dae package/dae/src
-#git clone --depth=1 -b kix https://github.com/QiuSimons/luci-app-dae package/luci-app-dae
 git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
 # 添加Passwall 及其依赖
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
@@ -140,12 +139,6 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 # 添加rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/luci-app-rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
-
-# 6. 修复与优化编译环境
-# 禁用 Rust 的 LLVM 编译，节省 10GB+ 空间和大量时间
-#if [ -f feeds/packages/lang/rust/Makefile ]; then
-#    sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
-#fi
 
 # 7. 其他
 # 专门针对 advancedplus 的流氓逻辑进行清洗
