@@ -104,8 +104,8 @@ git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
 # 添加 honk 大鹅
 git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
-git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae
-git clone --recurse-submodules --branch v2.1.2 https://github.com/daeuniverse/dae package/dae/src
+#git_sparse_clone main https://github.com/daeuniverse/openwrt-packages dae
+#git clone --recurse-submodules --branch v2.1.2 https://github.com/daeuniverse/dae package/dae/src
 git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
 # 添加Passwall 及其依赖
 git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
