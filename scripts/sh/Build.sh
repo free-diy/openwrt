@@ -16,14 +16,49 @@ fi
 # Isolate strict error handling and upstream pins from the rest of this script.
 (
   set -euo pipefail
-  src="$(realpath package/dae-packages/honk/src)"
+
+  # --- 动态路径查找（活的）---
+  src=""
+  build_script=""
+  for candidate in \
+    "package/dae-packages/honk/src" \
+    "package/honk/src" \
+    "feeds/packages/net/honk/src"; do
+    if [ -d "$candidate" ] && [ -f "$candidate/rust-toolchain.toml" ]; then
+      src="$(realpath "$candidate")"
+      parent_dir="$(dirname "$src")"
+      if [ -f "$parent_dir/build.sh" ]; then
+        build_script="$(realpath "$parent_dir/build.sh")"
+        break
+      fi
+    fi
+  done
+
+  if [ -z "$src" ] && [ -d "package" ]; then
+    found_path=$(find package -type f -name "rust-toolchain.toml" 2>/dev/null | grep -E 'honk/.*/rust-toolchain.toml' | head -n 1)
+    if [ -n "$found_path" ]; then
+      src="$(realpath "$(dirname "$found_path")")"
+      parent_dir="$(dirname "$src")"
+      if [ -f "$parent_dir/build.sh" ]; then
+        build_script="$(realpath "$parent_dir/build.sh")"
+      fi
+    fi
+  fi
+
+  if [ -z "$src" ] || [ ! -d "$src" ] || [ -z "$build_script" ] || [ ! -f "$build_script" ]; then
+    echo "❌ 错误: 无法动态定位到 honk 源码目录或 build.sh 脚本" >&2
+    exit 1
+  fi
+  echo "✅ 成功动态定位到 honk 路径: $src"
+  # -------------------------
+
   # The pinned bpf-linker checksum describes the x86_64 Linux host asset.
   [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
     echo 'This script requires an x86_64 Linux build host' >&2; exit 1;
   }
   # Install every Rust userspace target declared by the OpenWrt honk recipe.
   # Several OpenWrt CPU variants can share the same Rust target.
-  target_text="$(python3 - package/dae-packages/honk/build.sh <<'PY_TARGETS'
+  target_text="$(python3 - "$build_script" <<'PY_TARGETS'
 import pathlib, re, sys
 text = pathlib.Path(sys.argv[1]).read_text()
 section = re.search(r'case[^\n]*HONK_ARCH_PACKAGES[^\n]*\bin\s*\n(.*?)\besac\b', text, re.S)
