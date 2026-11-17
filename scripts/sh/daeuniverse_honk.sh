@@ -1,4 +1,4 @@
-##dae/honk
+##daeuniverse-dae/honk
 rm -rf feeds/luci/applications/luci-app-dae
 rm -rf feeds/luci/applications/luci-app-honk
 rm -rf feeds/packages/net/dae
