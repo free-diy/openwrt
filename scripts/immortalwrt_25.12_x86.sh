@@ -151,4 +151,15 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 # 8. 删除多余的插件
 #rm -rf package/all-proxy/mihomo
 #rm -rf package/helloworld/mihomo
-
+# 9. 正确调用根目录下的 Build1.sh，并自动清理 Windows 换行符
+BUILD_PATH="$GITHUB_WORKSPACE/scripts/sh/Build1.sh"
+if [ -f "$BUILD_PATH" ]; then
+  echo "🧹 正在自动清理 Build1.sh 的 Windows 换行符 (CRLF -> LF)..."
+  sed -i 's/\r$//' "$BUILD_PATH"
+  
+  echo "🔑 正在赋予 Build1.sh 执行权限..."
+  chmod +x "$BUILD_PATH"  # 加上这行更稳妥
+  
+  echo "🚀 正在执行 Build1.sh..."
+  bash "$BUILD_PATH"
+fi
