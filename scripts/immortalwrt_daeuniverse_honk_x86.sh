@@ -142,6 +142,12 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/luci-app-rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
+# 6. 修复与优化编译环境
+# 禁用 Rust 的 LLVM 编译，节省 10GB+ 空间和大量时间
+if [ -f feeds/packages/lang/rust/Makefile ]; then
+    sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+fi
+
 # 7. 其他
 # 专门针对 advancedplus 的流氓逻辑进行清洗
 #if [ -f package/luci-app-advancedplus/root/etc/init.d/advancedplus ]; then
