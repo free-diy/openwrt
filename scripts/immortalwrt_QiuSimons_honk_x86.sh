@@ -15,7 +15,7 @@ rm -rf feeds/packages/net/daed
 rm -rf feeds/luci/applications/luci-app-honk
 rm -rf feeds/packages/net/honk
 #rm -rf feeds/packages/lang/golang
-#rm -rf feeds/packages/lang/rust
+rm -rf feeds/packages/lang/rust
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
 
@@ -94,7 +94,7 @@ function git_sparse_clone() {
 
 # 4. 更新 golang 和 rust
 #git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
-#git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
+git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 
 # 5. 主题与常规插件
 # 添加argon主题
@@ -143,9 +143,32 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
 # 6. 修复与优化编译环境
-# 禁用 Rust 的 LLVM 编译，节省 10GB+ 空间和大量时间
-if [ -f feeds/packages/lang/rust/Makefile ]; then
-    sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+# 🛡️ 强力修复 sbwml/packages_lang_rust 的 CI LLVM 404 报错
+RUST_MAKEFILE=""
+for candidate in \
+  "feeds/packages/lang/rust/Makefile" \
+  "package/rust/Makefile" \
+  "package/packages_lang_rust/Makefile"; do
+  if [ -f "$candidate" ]; then
+    RUST_MAKEFILE="$candidate"
+    break
+  fi
+done
+
+if [ -n "$RUST_MAKEFILE" ]; then
+  echo "✅ 成功精准定位到: $RUST_MAKEFILE"
+  
+  # 检查是否已经注入过，避免重复追加
+  if ! grep -q "download-ci-llvm" "$RUST_MAKEFILE"; then
+    sed -i '/bootstrap.toml/a \
+	printf "[llvm]\\n" >> bootstrap.toml;\
+	printf "download-ci-llvm = false\\n" >> bootstrap.toml;' "$RUST_MAKEFILE"
+    echo "✅ 成功向 $RUST_MAKEFILE 注入禁用 CI LLVM 的配置"
+  else
+    echo "⚠️ 检测到该 Makefile 中已包含该配置，跳过。"
+  fi
+else
+  echo "⚠️ 警告: 常用目录中未找到 rust/Makefile，请确认执行顺序（需在 feeds update/install 之后）。"
 fi
 
 # 7. 其他
