@@ -143,13 +143,24 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
 # 6. 修复与优化编译环境
-# 禁用 Rust 的 CI LLVM 下载，强制本地编译以规避 404 错误
-if [ -f feeds/packages/lang/rust/Makefile ]; then
-    sed -i 's/download-ci-llvm[[:space:]]*=[[:space:]]*true/download-ci-llvm = false/g' feeds/packages/lang/rust/Makefile
-    sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' feeds/packages/lang/rust/Makefile
-    grep -n "download-ci-llvm" feeds/packages/lang/rust/Makefile
-    echo "✅ 已成功将 feeds/packages/lang/rust/Makefile 中的 download-ci-llvm 彻底改为 false"
+# 🛡️ 终极修复 Rust 编译在 GitHub Actions 下触发 404 报错的问题
+RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
+if [ -f "$RUST_MAKEFILE" ]; then
+    echo "🔧 正在向 feeds/packages/lang/rust/Makefile 注入防 404 及反 CI 误判补丁..."
+    
+    # 1. 确保将 download-ci-llvm 强制改为 false
+    sed -i 's/download-ci-llvm[[:space:]]*=[[:space:]]*true/download-ci-llvm = false/g' "$RUST_MAKEFILE"
+    sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' "$RUST_MAKEFILE"
+    
+    # 2. 在调用 x.py 编译前自动注销 CI 环境变量，防止 Rust 强行触发云端下载
+    sed -i 's/\(python3.*x\.py\)/unset CI GITHUB_ACTIONS CONTINUOUS_INTEGRATION; \1/g' "$RUST_MAKEFILE"
+    
+    echo "✅ feeds/packages/lang/rust/Makefile 修补完成！当前配置检查："
+    grep -n "download-ci-llvm" "$RUST_MAKEFILE" || true
+else
+    echo "⚠️ 警告: 未找到 $RUST_MAKEFILE，请确保此脚本在 feeds install 之后执行。"
 fi
+
 
 # 7. 其他
 # 专门针对 advancedplus 的流氓逻辑进行清洗
