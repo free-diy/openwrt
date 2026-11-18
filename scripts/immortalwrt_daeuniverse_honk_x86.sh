@@ -94,7 +94,9 @@ function git_sparse_clone() {
 
 # 4. 更新 golang 和 rust
 #git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
+#git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
+git_sparse_clone openwrt-25.12 https://github.com/openwrt/packages lang/rust
+mv package/rust feeds/packages/lang/rust
 
 # 5. 主题与常规插件
 # 添加argon主题
@@ -141,56 +143,6 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 # 添加rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/luci-app-rtp2httpd
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
-
-# 6. 修复与优化编译环境 (针对 sbwml/packages_lang_rust 的终极防 404 与反 CI 误判补丁)
-RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
-if [ -f "$RUST_MAKEFILE" ]; then
-    echo "🔧 正在使用 Python 深度修补 feeds/packages/lang/rust/Makefile..."
-    python3 - << 'EOF'
-import os
-
-path = "feeds/packages/lang/rust/Makefile"
-if os.path.exists(path):
-    with open(path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    lines = content.splitlines()
-    new_lines = []
-    toml_patched = False
-    x_py_patched = False
-
-    for line in lines:
-        new_lines.append(line)
-        
-        # 1. 在生成 bootstrap.toml 的地方注入强制关闭 CI LLVM 的配置
-        if "bootstrap.toml" in line and not toml_patched:
-            indent = len(line) - len(line.lstrip('\t'))
-            tab_str = '\t' * max(1, indent)
-            new_lines.append(f'{tab_str}echo -e "[llvm]\\nnothing-to-download = true\\ndownload-ci-llvm = false" >> bootstrap.toml')
-            toml_patched = True
-
-    # 2. 在所有执行 x.py 的命令前强行 unset CI 环境变量，防止 Rust 强行触发云端下载
-    final_lines = []
-    for line in new_lines:
-        if "x.py" in line and "unset CI" not in line:
-            indent = len(line) - len(line.lstrip('\t'))
-            tab_str = '\t' * max(1, indent)
-            stripped = line.strip()
-            final_lines.append(f'{tab_str}unset CI GITHUB_ACTIONS CONTINUOUS_INTEGRATION; {stripped}')
-            x_py_patched = True
-        else:
-            final_lines.append(line)
-
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(final_lines) + "\n")
-    
-    print(f"✅ Rust Makefile 深度修补完成！(Bootstrap 注入: {toml_patched}, CI Unset 注入: {x_py_patched})")
-else:
-    print(f"⚠️ 警告: 未找到 {path}，请确保此脚本在 feeds install 之后执行。")
-EOF
-fi
-
-
 
 # 7. 其他
 # 专门针对 advancedplus 的流氓逻辑进行清洗
