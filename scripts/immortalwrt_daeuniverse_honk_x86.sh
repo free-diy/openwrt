@@ -145,7 +145,11 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 # 6. 修复与优化编译环境
 # 禁用 Rust 的 CI LLVM 下载，强制本地编译以规避 404 错误
 if [ -f feeds/packages/lang/rust/Makefile ]; then
-    sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+    # 兼容带空格、带 --set 前缀等各种格式
+    sed -i 's/download-ci-llvm[[:space:]]*=[[:space:]]*true/download-ci-llvm = false/g' feeds/packages/lang/rust/Makefile
+    sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+    grep -n "download-ci-llvm" feeds/packages/lang/rust/Makefile
+    echo "✅ 已成功将 feeds/packages/lang/rust/Makefile 中的 download-ci-llvm 彻底改为 false"
 fi
 
 # 7. 其他
