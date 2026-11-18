@@ -143,32 +143,48 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
 # 6. 修复与优化编译环境
-# 🛡️ 强力修复 rust 的 CI LLVM 404 报错
-RUST_MAKEFILE=""
-for candidate in \
-  "feeds/packages/lang/rust/Makefile" \
-  "package/rust/Makefile" \
-  "package/packages_lang_rust/Makefile"; do
-  if [ -f "$candidate" ]; then
-    RUST_MAKEFILE="$candidate"
-    break
-  fi
-done
+# 🛡️ 使用 Python 强力修补 rust 的 Makefile
+RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
+if [ -f "$RUST_MAKEFILE" ]; then
+  echo "🔧 正在使用 Python 智能注入关闭 CI LLVM 的补丁..."
+  python3 - << 'EOF'
+import os
 
-if [ -n "$RUST_MAKEFILE" ]; then
-  echo "✅ 成功精准定位到: $RUST_MAKEFILE"
-  
-  # 检查是否已经注入过，避免重复追加
-  if ! grep -q "download-ci-llvm" "$RUST_MAKEFILE"; then
-    sed -i '/bootstrap.toml/a \
-	printf "[llvm]\\n" >> bootstrap.toml;\
-	printf "download-ci-llvm = false\\n" >> bootstrap.toml;' "$RUST_MAKEFILE"
-    echo "✅ 成功向 $RUST_MAKEFILE 注入禁用 CI LLVM 的配置"
-  else
-    echo "⚠️ 检测到该 Makefile 中已包含该配置，跳过。"
-  fi
+makefile_path = "feeds/packages/lang/rust/Makefile"
+if os.path.exists(makefile_path):
+    with open(makefile_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "download-ci-llvm = false" in content:
+        print("⚠️ 检测到 Makefile 中已包含该配置，跳过。")
+    else:
+        # 寻找 Makefile 中生成 bootstrap.toml 的地方，并在其后强制追加写入配置的命令
+        # sbwml 的 Makefile 通常在配置阶段写入 bootstrap.toml
+        target_str = "bootstrap.toml"
+        if target_str in content:
+            # 在写入 bootstrap.toml 的相关逻辑后方插入一行命令
+            # 通过向 Makefile 注入 shell 命令，确保生成 bootstrap.toml 时自动写入 [llvm] download-ci-llvm = false
+            patch_code = '\n\t@echo -e "[llvm]\\ndownload-ci-llvm = false" >> bootstrap.toml\n'
+            
+            # 找到最后一个 bootstrap.toml 出现的位置附近并注入
+            pos = content.rfind(target_str)
+            # 找该行结束的换行符
+            end_of_line = content.find("\n", pos)
+            
+            if end_of_line != -1:
+                new_content = content[:end_of_line+1] + patch_code + content[end_of_line+1:]
+                with open(makefile_path, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                print("✅ 成功向 feeds/packages/lang/rust/Makefile 注入配置！")
+            else:
+                print("❌ 未能找到合适的注入行位置。")
+        else:
+            print("❌ 未在 Makefile 中找到 bootstrap.toml 关键字。")
+else:
+    print(f"⚠️ 未找到文件: {makefile_path}")
+EOF
 else
-  echo "⚠️ 警告: 常用目录中未找到 rust/Makefile，请确认执行顺序（需在 feeds update/install 之后）。"
+  echo "⚠️ 警告: feeds/packages/lang/rust/Makefile 不存在，请确保在 feeds update/install 之后执行此脚本！"
 fi
 
 # 7. 其他
