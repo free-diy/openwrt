@@ -143,7 +143,7 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
 # 6. 修复与优化编译环境
-# 🛡️ 强力修补 feeds/packages/lang/rust/Makefile，强制关闭 CI LLVM 下载
+# 🛡️ 使用 Python 强力修补 rust 的 Makefile
 RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
 if [ -f "$RUST_MAKEFILE" ]; then
   echo "🔧 正在使用 Python 深度修补 $RUST_MAKEFILE..."
