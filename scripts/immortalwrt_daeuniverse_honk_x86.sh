@@ -143,7 +143,7 @@ git_sparse_clone master https://github.com/sirpdboy/luci-app-poweroffdevice luci
 #git_sparse_clone https://github.com/stackia/rtp2httpd/tree/main/openwrt-support/rtp2httpd
 
 # 6. 修复与优化编译环境
-# 🛡️ 强力修复 sbwml/packages_lang_rust 的 CI LLVM 404 报错
+# 🛡️ 强力修复 rust 的 CI LLVM 404 报错
 RUST_MAKEFILE=""
 for candidate in \
   "feeds/packages/lang/rust/Makefile" \
