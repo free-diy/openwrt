@@ -1,4 +1,4 @@
-##daeuniverse-dae/honk
+##dae/honk
 rm -rf feeds/luci/applications/luci-app-dae
 rm -rf feeds/luci/applications/luci-app-honk
 rm -rf feeds/packages/net/dae
@@ -16,63 +16,14 @@ fi
 # Isolate strict error handling and upstream pins from the rest of this script.
 (
   set -euo pipefail
-
-  # --- 修正后的动态路径查找（确保各自独立寻找，避免绑定错误）---
-  src=""
-  build_script=""
-
-  # 1. 寻找 honk 源码中的 rust-toolchain.toml 所在目录
-  for candidate in \
-    "package/dae-packages/honk/src" \
-    "package/honk/src" \
-    "feeds/packages/net/honk/src"; do
-    if [ -d "$candidate" ] && [ -f "$candidate/rust-toolchain.toml" ]; then
-      src="$(realpath "$candidate")"
-      break
-    fi
-  done
-
-  if [ -z "$src" ] && [ -d "package" ]; then
-    found_path=$(find package -type f -name "rust-toolchain.toml" 2>/dev/null | grep -E 'honk/.*/rust-toolchain.toml' | head -n 1)
-  if [ -n "$found_path" ]; then
-      src="$(realpath "$(dirname "$found_path")")"
-    fi
-  fi
-
-  # 2. 独立寻找包含 architecture mapping 的 build.sh 脚本
-  for script_candidate in \
-    "package/dae-packages/build.sh" \
-    "package/dae-packages/honk/build.sh" \
-    "package/honk/build.sh"; do
-    if [ -f "$script_candidate" ]; then
-      build_script="$(realpath "$script_candidate")"
-      break
-    fi
-  done
-
-  # 如果上面没找到，尝试在 dae-packages 下全局搜索 build.sh
-  if [ -z "$build_script" ] && [ -d "package/dae-packages" ]; then
-    found_script=$(find package/dae-packages -type f -name "build.sh" | head -n 1)
-    if [ -n "$found_script" ]; then
-      build_script="$(realpath "$found_script")"
-    fi
-  fi
-
-  if [ -z "$src" ] || [ ! -d "$src" ] || [ -z "$build_script" ] || [ ! -f "$build_script" ]; then
-    echo "❌ 错误: 无法动态定位到 honk 源码目录 ($src) 或 build.sh 脚本 ($build_script)" >&2
-    exit 1
-  fi
-  echo "✅ 成功动态定位到 honk 路径: $src"
-  echo "✅ 成功动态定位到 build.sh 路径: $build_script"
-  # -------------------------------------------------------------
-
+  src="$(realpath package/dae-packages/honk/src)"
   # The pinned bpf-linker checksum describes the x86_64 Linux host asset.
   [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
     echo 'This script requires an x86_64 Linux build host' >&2; exit 1;
   }
   # Install every Rust userspace target declared by the OpenWrt honk recipe.
   # Several OpenWrt CPU variants can share the same Rust target.
-  target_text="$(python3 - "$build_script" <<'PY_TARGETS'
+  target_text="$(python3 - package/dae-packages/honk/build.sh <<'PY_TARGETS'
 import pathlib, re, sys
 text = pathlib.Path(sys.argv[1]).read_text()
 section = re.search(r'case[^\n]*HONK_ARCH_PACKAGES[^\n]*\bin\s*\n(.*?)\besac\b', text, re.S)
