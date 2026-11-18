@@ -12,8 +12,7 @@
         for candidate in \
           "package/luci-app-honk/honk/honk_toolchain.sh" \
           "package/luci-app-honk/honk_toolchain.sh" \
-          "feeds/luci/applications/luci-app-honk/honk/honk_toolchain.sh" \
-          "feeds/luci/applications/luci-app-honk/honk_toolchain.sh"; do
+          "feeds/luci/applications/luci-app-honk/honk/honk_toolchain.sh"; do
           if [ -f "$candidate" ]; then
             HONK_TOOLCHAIN_PATH="$candidate"
             break
@@ -30,8 +29,14 @@
           HONK_DIR=$(dirname "$HONK_TOOLCHAIN_PATH")
           echo "✅ 成功找到 honk 工具链脚本: $HONK_TOOLCHAIN_PATH (所在目录: $HONK_DIR)"
           
-          # 执行解析脚本获取版本号
-          eval "$(bash "$HONK_TOOLCHAIN_PATH")"
+          # 【修复错误】进入 honk_toolchain.sh 所在目录执行，确保其能正确读取同级 Makefile 解析版本
+          eval "$(cd "$HONK_DIR" && bash "$(basename "$HONK_TOOLCHAIN_PATH")")"
+          
+          # 检查版本变量是否成功获取，避免后续下载链接变成空值
+          if [ -z "${BPF_LINKER_VERSION:-}" ] || [ -z "${ZIG_VERSION:-}" ]; then
+            echo "❌ 错误: 未能从 honk_toolchain.sh 正确解析出版本号" >&2
+            exit 1
+          fi
           
           # 安装 bpf-linker
           echo "📦 正在安装 bpf-linker v${BPF_LINKER_VERSION}..."
@@ -47,5 +52,6 @@
           echo "✅ honk 专用宿主机工具链安装完成！"
         else
           echo "⚠️ 指定目录未检测到 honk_toolchain.sh 脚本，跳过专用工具链安装。"
+          exit 1
         fi
         # ---------------------------------------------
