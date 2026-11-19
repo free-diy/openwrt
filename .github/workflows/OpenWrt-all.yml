@@ -203,6 +203,7 @@ jobs:
         echo "🚀 首次尝试线程数: $THREADS"
         echo "💾 编译前磁盘空间状态:"
         df -h
+        
         make -j$THREADS FORCE_UNSAFE_CONFIGURE=1 || {
           echo "⚠️ 多线程爆内存或冲突失败，正在以单线程重试 (日志已转存以防崩溃)..."
           make -j1 V=s FORCE_UNSAFE_CONFIGURE=1 > build.log 2>&1 || {
