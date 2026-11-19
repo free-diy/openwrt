@@ -75,32 +75,34 @@ jobs:
 
     - name: 4. 环境部署
       run: |
-        # 🛑 强制杀掉后台残留的 apt 进程并清理锁，防止死锁卡死
-        sudo systemctl stop unattended-upgrades || true
-        sudo killall apt apt-get dpkg apt-cache 2>/dev/null || true
-        sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock /var/lib/apt/lists/lock
-        
-        # 清理 Ubuntu 24.04 残留的超大无用目录
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-        sudo docker image prune --all --force
-        
+        set -e
         export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get remove -y needrestart || true
-        
-        sudo -E apt-get -qq update
-        DEPS=$(curl -fsSL https://raw.githubusercontent.com/free-diy/openwrt/main/depends_ubuntu || echo "")
+
+        # 🛑 强制杀掉后台残留的 apt 进程并清理锁，防止死锁卡死
+        sudo systemctl stop unattended-upgrades apt-daily.service apt-daily-upgrade.service 2>/dev/null || true
+        sudo killall -9 apt apt-get dpkg apt-cache 2>/dev/null || true
+        sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock /var/lib/apt/lists/lock
+        sudo dpkg --configure -a || true
+
+        # 避免 man-db 在 I/O 繁忙时长时间重建索引（不卸载 needrestart，避免全库扫描卡死）
+        echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
+
+        # 清理 Ubuntu 24.04 残留的超大无用目录（保留磁盘空间释放）
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+        APT_BASE_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+
+        sudo -E apt-get -qq update $APT_BASE_OPTS
+        DEPS=$(curl -fsSL --max-time 20 https://raw.githubusercontent.com/free-diy/openwrt/main/depends_ubuntu || echo "")
         if [ -z "$DEPS" ]; then
           DEPS="ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler dwarves ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev golang-go gperf haveged help2man intltool lib32gcc-s1 libbpf-dev libc6-dev-i386 libclang-dev libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build npm p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd"
         fi
 
-        sudo -E apt-get -qq install -y --no-install-recommends \
-          -o Dpkg::Options::="--force-confdef" \
-          -o Dpkg::Options::="--force-confold" \
-          $DEPS
-        
-        sudo -E apt-get -qq autoremove --purge && sudo -E apt-get -qq clean
+        sudo -E apt-get -qq install -y --no-install-recommends $APT_BASE_OPTS $DEPS
+
+        sudo -E apt-get -qq autoremove --purge -y $APT_BASE_OPTS && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
-        sudo npm install -g pnpm
+        sudo npm install -g pnpm --fetch-retries=3 --fetch-retry-mintimeout=5000
 
     - name: 5. 克隆源码与环境准备
       run: |
@@ -199,6 +201,9 @@ jobs:
         
         THREADS=$(nproc)
         echo "🚀 首次尝试线程数: $THREADS"
+        echo "💾 编译前磁盘空间状态:"
+        df -h
+
         make -j$THREADS FORCE_UNSAFE_CONFIGURE=1 || {
           echo "⚠️ 多线程爆内存或冲突失败，正在以单线程重试 (日志已转存以防崩溃)..."
           make -j1 V=s FORCE_UNSAFE_CONFIGURE=1 > build.log 2>&1 || {
