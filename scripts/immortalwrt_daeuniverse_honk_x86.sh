@@ -10,8 +10,8 @@ rm -rf feeds/luci/applications/luci-app-openclash
 rm -rf feeds/luci/applications/luci-app-passwall
 #rm -rf feeds/luci/applications/luci-app-dae
 #rm -rf feeds/packages/net/dae
-#rm -rf feeds/luci/applications/luci-app-daed
-#rm -rf feeds/packages/net/daed
+rm -rf feeds/luci/applications/luci-app-daed
+rm -rf feeds/packages/net/daed
 #rm -rf feeds/luci/applications/luci-app-honk
 #rm -rf feeds/packages/net/honk
 #rm -rf feeds/packages/lang/golang
