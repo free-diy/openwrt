@@ -84,11 +84,10 @@ jobs:
         sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock /var/lib/apt/lists/lock
         sudo dpkg --configure -a || true
 
-        # 避免 man-db 在 I/O 繁忙时长时间重建索引
+        # 避免 man-db 在 I/O 繁忙时长时间重建索引（不卸载 needrestart，避免全库扫描卡死）
         echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
-        sudo apt-get remove -y --purge needrestart || true
 
-        # 清理 Ubuntu 24.04 残留的超大无用目录
+        # 清理 Ubuntu 24.04 残留的超大无用目录（保留磁盘空间释放）
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
 
         APT_BASE_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
