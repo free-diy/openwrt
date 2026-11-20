@@ -96,19 +96,28 @@ jobs:
         timeout 300 sudo -E apt-get update $APT_BASE_OPTS || timeout 300 sudo -E apt-get update $APT_BASE_OPTS
 
 
-        DEPS=$(curl -fsSL --max-time 20 https://raw.githubusercontent.com/free-diy/openwrt/main/depends_ubuntu || echo "")
+    - name: 4. 环境部署
+      run: |
+        # 清理 Ubuntu 24.04 残留的超大无用目录
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get remove -y needrestart || true
+        
+        sudo -E apt-get -qq update
+        DEPS=$(curl -fsSL https://raw.githubusercontent.com/free-diy/openwrt/main/depends_ubuntu || echo "")
         if [ -z "$DEPS" ]; then
           DEPS="ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler dwarves ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev golang-go gperf haveged help2man intltool lib32gcc-s1 libbpf-dev libc6-dev-i386 libclang-dev libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build npm p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd"
         fi
 
-        echo "📦 安装编译依赖..."
-        timeout 900 sudo -E apt-get -qq install -y --no-install-recommends $APT_BASE_OPTS $DEPS
-
-        sudo -E apt-get -qq autoremove --purge -y $APT_BASE_OPTS && sudo -E apt-get -qq clean
+        sudo -E apt-get -qq install -y --no-install-recommends \
+          -o Dpkg::Options::="--force-confdef" \
+          -o Dpkg::Options::="--force-confold" \
+          $DEPS
+          
+        sudo -E apt-get -qq autoremove --purge && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
-
-        echo "📦 安装 pnpm..."
-        timeout 180 sudo npm install -g pnpm --fetch-retries=3 --fetch-retry-mintimeout=5000
+        sudo npm install -g pnpm
 
 
     - name: 5. 克隆源码与环境准备
