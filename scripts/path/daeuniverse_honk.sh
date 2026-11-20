@@ -12,8 +12,9 @@ else
   git clone --recurse-submodules https://github.com/daeuniverse/dae package/dae-packages/dae/src
   git clone --recurse-submodules https://github.com/daeuniverse/honk package/dae-packages/honk/src
 fi
+
 # Prepare host Rust from the checked-out honk source requirements.
-# Isolate strict error handling and upstream pins from the rest of this script.
+# Isolate strict error handling, independent paths, and upstream pins within this subshell.
 (
   set -euo pipefail
   src="$(realpath package/dae-packages/honk/src)"
@@ -21,8 +22,7 @@ fi
   [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
     echo 'This script requires an x86_64 Linux build host' >&2; exit 1;
   }
-  # Install every Rust userspace target declared by the OpenWrt honk recipe.
-  # Several OpenWrt CPU variants can share the same Rust target.
+
   target_text="$(python3 - package/dae-packages/honk/build.sh <<'PY_TARGETS'
 import pathlib, re, sys
 text = pathlib.Path(sys.argv[1]).read_text()
@@ -37,22 +37,27 @@ PY_TARGETS
   )"
   mapfile -t targets <<< "$target_text"
   printf 'Preparing honk Rust target: %s\n' "${targets[@]}"
-  # Must run as the same ordinary user that runs OpenWrt make.
-  export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
-  export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+
+  # 仅在当前子 Shell 中使用 honk 专属的 CARGO_HOME / RUSTUP_HOME / PATH，不写入全局环境
+  HONK_BASE_DIR="$(pwd)/.honk-toolchain"
+  export CARGO_HOME="$HONK_BASE_DIR/cargo"
+  export RUSTUP_HOME="$HONK_BASE_DIR/rustup"
   export PATH="$CARGO_HOME/bin:$PATH"
+  mkdir -p "$CARGO_HOME" "$RUSTUP_HOME"
+
   if ! command -v rustup >/dev/null 2>&1; then
     installer="$(mktemp)"
     curl --proto '=https' --tlsv1.2 -fLsS --retry 3 https://sh.rustup.rs -o "$installer"
     sh "$installer" -y --profile minimal --default-toolchain none --no-modify-path
     rm -f "$installer"
   fi
+
   stable="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/rust-toolchain.toml")"
   nightly="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/crates/honk-ebpf/rust-toolchain.toml")"
   rustup toolchain install "$stable" --profile minimal --component rustfmt,clippy
   rustup target add --toolchain "$stable" "${targets[@]}"
   rustup toolchain install "$nightly" --profile minimal --component rust-src,llvm-tools
-  # Same trusted pins file and same host binary as the upstream package workflow.
+
   source "$src/.github/ci/pins.env"
   archive="$(mktemp --suffix=.tar.zst)"
   curl -fLsS --retry 3 -o "$archive" \
@@ -61,18 +66,13 @@ PY_TARGETS
   mkdir -p "$CARGO_HOME/bin"
   tar --zstd -xf "$archive" -C "$CARGO_HOME/bin"
   rm -f "$archive"
+
   (cd "$src"; cargo --version; rustc --version; bpf-linker --version)
   rustup target list --installed --toolchain "$stable"
-  # GitHub Actions starts a new shell for every step.
-  if [[ -n "${GITHUB_ENV:-}" && -n "${GITHUB_PATH:-}" ]]; then
-    printf 'CARGO_HOME=%s\nRUSTUP_HOME=%s\n' "$CARGO_HOME" "$RUSTUP_HOME" >> "$GITHUB_ENV"
-    printf '%s\n' "$CARGO_HOME/bin" >> "$GITHUB_PATH"
-  fi
 )
 honk_rust_status=$?
 if [ "$honk_rust_status" -ne 0 ]; then
   echo "honk Rust environment preparation failed" >&2
   exit "$honk_rust_status"
 fi
-
 ##End of dae/honk
