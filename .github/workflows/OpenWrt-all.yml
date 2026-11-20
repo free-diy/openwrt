@@ -75,29 +75,6 @@ jobs:
 
     - name: 4. 环境部署
       run: |
-        set -e
-        export DEBIAN_FRONTEND=noninteractive
-
-        # 🛑 清理残留 apt/dpkg 锁，防止死锁卡死
-        sudo systemctl stop unattended-upgrades apt-daily.service apt-daily-upgrade.service 2>/dev/null || true
-        sudo killall -9 apt apt-get dpkg apt-cache 2>/dev/null || true
-        sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock /var/lib/apt/lists/lock
-        sudo dpkg --configure -a || true
-
-        # 避免 man-db 在 I/O 繁忙时重建索引
-        echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
-
-        # 仅补充清理 free-disk-space 未重点覆盖的超大目录
-        sudo rm -rf /opt/hostedtoolcache/CodeQL
-
-        APT_BASE_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
-
-        echo "🔄 更新软件源..."
-        timeout 300 sudo -E apt-get update $APT_BASE_OPTS || timeout 300 sudo -E apt-get update $APT_BASE_OPTS
-
-
-    - name: 4. 环境部署
-      run: |
         # 清理 Ubuntu 24.04 残留的超大无用目录
         sudo rm -rf /opt/hostedtoolcache/CodeQL
         
