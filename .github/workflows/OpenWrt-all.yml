@@ -194,6 +194,7 @@ jobs:
         rm -rf dl/go-mod-cache dl/cargo
         [ -f "scripts/clean-dl.sh" ] && ./scripts/clean-dl.sh || true
         find dl -mindepth 1 -size -1024c -delete 2>/dev/null || true
+        find dl -type f \( -name "*.tmp" -o -name "*.part" -o -name "*.aria2" \) -delete 2>/dev/null || true
         
         # 对 dl 缓存结构的日志监控
         echo "📊 dl 目录缓存体积前 5 排行:"
@@ -215,6 +216,7 @@ jobs:
           echo "⚠️ 多线程爆内存或冲突失败，正在以单线程重试 (日志已转存以防崩溃)..."
           make -j1 V=s FORCE_UNSAFE_CONFIGURE=1 > build.log 2>&1 || {
             tail -n 2000 build.log
+            rm -f build.log
             echo "❌ 编译彻底失败，详细原因请查看上述日志尾部。"
             exit 1
           }
