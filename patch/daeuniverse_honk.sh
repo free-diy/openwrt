@@ -42,10 +42,7 @@ PY_TARGETS
   export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
   export PATH="$CARGO_HOME/bin:$PATH"
   if ! command -v rustup >/dev/null 2>&1; then
-    installer="$(mktemp)"
-    curl --proto '=https' --tlsv1.2 -fLsS --retry 3 https://sh.rustup.rs -o "$installer"
-    sh "$installer" -y --profile minimal --default-toolchain none --no-modify-path
-    rm -f "$installer"
+    curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none --no-modify-path
   fi
   stable="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/rust-toolchain.toml")"
   nightly="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/crates/honk-ebpf/rust-toolchain.toml")"
@@ -74,5 +71,4 @@ if [ "$honk_rust_status" -ne 0 ]; then
   echo "honk Rust environment preparation failed" >&2
   exit "$honk_rust_status"
 fi
-
 ##End of dae/honk
