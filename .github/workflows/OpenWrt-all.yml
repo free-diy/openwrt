@@ -326,3 +326,13 @@ jobs:
         
         echo "✅ 缓存清理步骤结束"
         echo "=========================================="
+
+    - name: 14. 清理旧 Workflow 运行记录
+      if: always() && !cancelled()
+      uses: ophub/delete-releases-workflows@main
+      with:
+        gh_token: ${{ secrets.GITHUB_TOKEN }}
+        delete_releases: false
+        delete_tags: false
+        delete_workflows: true
+        workflows_keep_day: 3  
