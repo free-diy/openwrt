@@ -18,7 +18,7 @@ fi
   set -euo pipefail
   src="$(realpath package/dae-packages/honk/src)"
   # The pinned bpf-linker checksum describes the x86_64 Linux host asset.
-  [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
+  [[ "\( (uname -s)" == Linux && " \)(uname -m)" == x86_64 ]] || {
     echo 'This script requires an x86_64 Linux build host' >&2; exit 1;
   }
   # Install every Rust userspace target declared by the OpenWrt honk recipe.
@@ -37,17 +37,18 @@ PY_TARGETS
   )"
   mapfile -t targets <<< "$target_text"
   printf 'Preparing honk Rust target: %s\n' "${targets[@]}"
-  # Must run as the same ordinary user that runs OpenWrt make.
-  export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
-  export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+  # Keep rustup away from $HOME/.cargo and from OpenWrt's dl/cargo.
+  export CARGO_HOME="${HOME}/.honk-cargo"
+  export RUSTUP_HOME="${HOME}/.honk-rustup"
   export PATH="$CARGO_HOME/bin:$PATH"
-  if ! command -v rustup >/dev/null 2>&1; then
+  unset RUSTUP_TOOLCHAIN || true
+  if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then
     curl --retry 3 --retry-delay 2 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none --no-modify-path
   fi
   stable="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/rust-toolchain.toml")"
   nightly="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/crates/honk-ebpf/rust-toolchain.toml")"
   rustup toolchain install "$stable" --profile minimal --component rustfmt,clippy
-  rustup target add --toolchain "$stable" "${targets[@]}"
+  rustup target add --toolchain "\( stable" " \){targets[@]}"
   rustup toolchain install "$nightly" --profile minimal --component rust-src,llvm-tools
   # Same trusted pins file and same host binary as the upstream package workflow.
   source "$src/.github/ci/pins.env"
@@ -60,10 +61,12 @@ PY_TARGETS
   rm -f "$archive"
   (cd "$src"; cargo --version; rustc --version; bpf-linker --version)
   rustup target list --installed --toolchain "$stable"
-  # GitHub Actions starts a new shell for every step.
-  if [[ -n "${GITHUB_ENV:-}" && -n "${GITHUB_PATH:-}" ]]; then
-    printf 'CARGO_HOME=%s\nRUSTUP_HOME=%s\n' "$CARGO_HOME" "$RUSTUP_HOME" >> "$GITHUB_ENV"
-    printf '%s\n' "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+  # Only bpf-linker may be visible to later steps. Never export rustc/cargo/rustup.
+  linker_dir="${HOME}/.honk-bin"
+  mkdir -p "$linker_dir"
+  install -m 0755 "$CARGO_HOME/bin/bpf-linker" "$linker_dir/bpf-linker"
+  if [[ -n "${GITHUB_PATH:-}" ]]; then
+    printf '%s\n' "$linker_dir" >> "$GITHUB_PATH"
   fi
 )
 honk_rust_status=$?
