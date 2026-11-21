@@ -59,7 +59,7 @@ jobs:
           echo "REPO_BRANCH=openwrt-25.12" >> $GITHUB_ENV
           echo "CONFIG_FILE=configs/immortalwrt_daeuniverse_honk_x86.config" >> $GITHUB_ENV
           echo "TARGET_PATTERN=*squashfs-combined-*.img.gz" >> $GITHUB_ENV
-          echo "DIY_P2_SH=scripts/daeuniverse_honk.sh" >> $GITHUB_ENV
+          echo "DIY_P2_SH=scripts/immortalwrt_daeuniverse_honk_x86.sh" >> $GITHUB_ENV
         fi
 
     - name: 3. 空间清理与 I/O 优化
