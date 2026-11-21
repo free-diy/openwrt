@@ -14,7 +14,7 @@ rm -rf feeds/luci/applications/luci-app-daed
 rm -rf feeds/packages/net/daed
 rm -rf feeds/luci/applications/luci-app-honk
 rm -rf feeds/packages/net/honk
-#rm -rf feeds/packages/lang/golang
+rm -rf feeds/packages/lang/golang
 rm -rf feeds/packages/lang/rust
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
@@ -93,7 +93,7 @@ function git_sparse_clone() {
 }
 
 # 4. 更新 golang 和 rust
-#git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
+git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
 git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 
 # 5. 主题与常规插件
