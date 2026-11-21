@@ -94,7 +94,9 @@ function git_sparse_clone() {
 
 # 4. 更新 golang 和 rust
 git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
+#git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
+git_sparse_clone openwrt-25.12 https://github.com/openwrt/packages lang/rust
+mv package/rust feeds/packages/lang/rust
 
 # 5. 主题与常规插件
 # 添加argon主题
