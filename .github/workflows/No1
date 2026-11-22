@@ -229,14 +229,31 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd "${{ env.OPENWRT_PATH }}"
-        mkdir -p $GITHUB_WORKSPACE/outputs
-        find bin/targets -type f -name "${{ env.TARGET_PATTERN }}" ! -name "*.json" ! -name "*.manifest" -exec cp -v {} $GITHUB_WORKSPACE/outputs/ \;
-        cd $GITHUB_WORKSPACE/outputs
+        mkdir -p "$GITHUB_WORKSPACE/outputs"
+
+        echo "=== [1/2] bin/targets 下所有文件 ==="
+        find bin/targets -type f | sort
+
+        echo "=== [2/2] 匹配 TARGET_PATTERN (${{ env.TARGET_PATTERN }}) 的产物 ==="
+        find bin/targets -type f -name "${{ env.TARGET_PATTERN }}" ! -name "*.json" ! -name "*.manifest" | sort | tee /tmp/matched_artifacts.txt
+
+        if [ -s /tmp/matched_artifacts.txt ]; then
+          echo "=== 开始复制到 $GITHUB_WORKSPACE/outputs ==="
+          while IFS= read -r file; do
+            cp -v "$file" "$GITHUB_WORKSPACE/outputs/"
+          done < /tmp/matched_artifacts.txt
+        else
+          echo "未匹配到任何目标产物"
+        fi
+
+        cd "$GITHUB_WORKSPACE/outputs"
         if [ -n "$(ls -A . 2>/dev/null)" ]; then
           sha256sum * > SHA256SUMS
-          echo "has_artifacts=true" >> $GITHUB_OUTPUT
+          echo "=== 已生成 SHA256SUMS ==="
+          cat SHA256SUMS
+          echo "has_artifacts=true" >> "$GITHUB_OUTPUT"
         else
-          echo "has_artifacts=false" >> $GITHUB_OUTPUT
+          echo "has_artifacts=false" >> "$GITHUB_OUTPUT"
         fi
 
     - name: 11. 备份固件到 Artifacts
