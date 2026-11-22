@@ -21,15 +21,24 @@ fi
   [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
     echo 'This script requires an x86_64 Linux build host' >&2; exit 1;
   }
+  # 动态查找 build.sh（优先默认路径，找不到再搜索）
+  honk_build_sh="package/dae-packages/honk/build.sh"
+  if [ ! -f "$honk_build_sh" ]; then
+    honk_build_sh="$(find package/dae-packages "$src" -maxdepth 4 -type f -name "build.sh" 2>/dev/null | head -n1 || true)"
+  fi
+  [ -f "$honk_build_sh" ] || {
+    echo "Cannot locate honk build.sh" >&2; exit 1;
+  }
   # Install every Rust userspace target declared by the OpenWrt honk recipe.
   # Several OpenWrt CPU variants can share the same Rust target.
-  target_text="$(python3 - package/dae-packages/honk/build.sh <<'PY_TARGETS'
+  target_text="$(python3 - "$honk_build_sh" <<'PY_TARGETS'
 import pathlib, re, sys
 text = pathlib.Path(sys.argv[1]).read_text()
 section = re.search(r'case[^\n]*HONK_ARCH_PACKAGES[^\n]*\bin\s*\n(.*?)\besac\b', text, re.S)
-if section is None:
-    sys.exit("Cannot locate the honk architecture mapping in build.sh")
-targets = sorted(set(re.findall(r"\btarget\s*=\s*[\"']?([A-Za-z0-9_]+(?:-[A-Za-z0-9_.]+){2,})", section.group(1))))
+scope = section.group(1) if section else text
+targets = sorted(set(re.findall(r"\b(?:rust_)?target\s*=\s*[\"']?([A-Za-z0-9_]+(?:-[A-Za-z0-9_.]+){2,})", scope)))
+if not targets:
+    targets = sorted(set(re.findall(r"\b([a-z0-9_]+-(?:unknown|pc|apple|linux)-(?:gnu|musl|gnueabihf|musleabihf|android))\b", scope)))
 if not targets:
     sys.exit("No literal Rust targets found; review the upstream honk architecture mapping")
 print("\n".join(targets))
@@ -47,13 +56,23 @@ PY_TARGETS
     sh "$installer" -y --profile minimal --default-toolchain none --no-modify-path
     rm -f "$installer"
   fi
-  stable="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/rust-toolchain.toml")"
-  nightly="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$src/crates/honk-ebpf/rust-toolchain.toml")"
+  # 动态查找 stable 与 nightly 的 rust-toolchain.toml
+  stable_toml="$src/rust-toolchain.toml"
+  [ -f "$stable_toml" ] || stable_toml="$(find "$src" -maxdepth 3 -type f -name "rust-toolchain.toml" ! -path "*ebpf*" 2>/dev/null | head -n1 || true)"
+  nightly_toml="$src/crates/honk-ebpf/rust-toolchain.toml"
+  [ -f "$nightly_toml" ] || nightly_toml="$(find "$src" -maxdepth 4 -type f -name "rust-toolchain.toml" -path "*ebpf*" 2>/dev/null | head -n1 || true)"
+  stable="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$stable_toml")"
+  nightly="$(python3 -c 'import sys,tomllib;print(tomllib.load(open(sys.argv[1],"rb"))["toolchain"]["channel"])' "$nightly_toml")"
   rustup toolchain install "$stable" --profile minimal --component rustfmt,clippy
   rustup target add --toolchain "$stable" "${targets[@]}"
   rustup toolchain install "$nightly" --profile minimal --component rust-src,llvm-tools
+  # 动态查找 pins.env（优先默认路径，找不到再搜索）
+  pins_file="$src/.github/ci/pins.env"
+  if [ ! -f "$pins_file" ]; then
+    pins_file="$(find package/dae-packages "$src" -maxdepth 4 -type f -name "pins.env" 2>/dev/null | head -n1 || true)"
+  fi
   # Same trusted pins file and same host binary as the upstream package workflow.
-  source "$src/.github/ci/pins.env"
+  source "$pins_file"
   archive="$(mktemp --suffix=.tar.zst)"
   curl -fLsS --retry 3 -o "$archive" \
     "https://github.com/aya-rs/bpf-linker/releases/download/v${BPF_LINKER_VERSION}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
@@ -74,5 +93,4 @@ if [ "$honk_rust_status" -ne 0 ]; then
   echo "honk Rust environment preparation failed" >&2
   exit "$honk_rust_status"
 fi
-
 ##End of dae/honk
