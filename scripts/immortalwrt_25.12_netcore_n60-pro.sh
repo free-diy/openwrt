@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 1. 修改默认 IP
-sed -i 's/192\.168\.110\.1/10.31.2.251/g' package/base-files/files/bin/config_generate
-sed -i 's/192\.168\.6\.1/10.31.2.251/g' package/base-files/files/bin/config_generate
+sed -i '/lan)/s/192\.168\.[0-9.]*/10.31.2.251/' package/base-files/files/bin/config_generate
+#sed -i 's/192\.168\.110\.1/10.31.2.251/g' package/base-files/files/bin/config_generate
+#sed -i 's/192\.168\.6\.1/10.31.2.251/g' package/base-files/files/bin/config_generate
 
 # 2.移除要替换的包
 rm -rf feeds/luci/themes/luci-theme-argon
@@ -13,7 +14,7 @@ rm -rf feeds/luci/applications/luci-app-dae
 rm -rf feeds/packages/net/dae
 rm -rf feeds/luci/applications/luci-app-daed
 rm -rf feeds/packages/net/daed
-rm -rf feeds/packages/lang/golang
+#rm -rf feeds/packages/lang/golang
 rm -rf feeds/packages/lang/rust
 #rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 #rm -rf feeds/luci/applications/luci-app-netdata
@@ -92,7 +93,7 @@ function git_sparse_clone() {
 }
 
 # 4. 更新 golang 和 rust
-git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
+#git clone --depth=1 -b 27.x https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
 git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 # 5. 主题与常规插件
 # 添加argon主题
@@ -147,3 +148,17 @@ git_sparse_clone main https://github.com/sirpdboy/luci-app-taskplan luci-app-tas
 #if [ -f package/luci-app-advancedplus/root/etc/init.d/advancedplus ]; then
 #    sed -i '/zsh/d' package/luci-app-advancedplus/root/etc/init.d/advancedplus
 #fi
+
+# 10. 调用 daeuniverse_honk.sh，并自动清理 Windows 换行符
+BUILD_PATH="$GITHUB_WORKSPACE/patch/daeuniverse_honk.sh"
+if [ -f "$BUILD_PATH" ]; then
+  echo "🧹 正在自动清理 daeuniverse_honk.sh 的 Windows 换行符 (CRLF -> LF)..."
+  sed -i 's/\r$//' "$BUILD_PATH"
+  
+  echo "🔑 正在赋予 daeuniverse_honk.sh 执行权限..."
+  chmod +x "$BUILD_PATH"  # 加上这行更稳妥
+  
+  echo "🚀 正在执行 daeuniverse_honk.sh..."
+  bash "$BUILD_PATH"
+fi
+###########################################################################
