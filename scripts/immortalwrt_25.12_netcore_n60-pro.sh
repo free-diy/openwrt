@@ -103,8 +103,9 @@ git clone https://github.com/sbwml/packages_lang_rust feeds/packages/lang/rust
 #git clone --depth=1 -b main https://github.com/gdy666/luci-app-lucky package/lucky
 # 添加系统高级设置
 git clone --depth=1 -b main https://github.com/free-diy/luci-app-advancedplus package/luci-app-advancedplus
-# 添加kenzok8大鹅
-#git clone --depth=1 -b main https://github.com/kenzok8/openwrt-daede package/openwrt-daede
+# 添加 honk
+git clone --depth=1 -b master https://github.com/QiuSimons/luci-app-honk package/luci-app-honk
+git clone --depth=1 -b master https://github.com/QiuSimons/vmlinux-btf package/vmlinux-btf
 # 添加nikki
 git clone --depth=1 -b main https://github.com/nikkinikki-org/OpenWrt-nikki package/OpenWrt-nikki
 # 添加Passwall 及其依赖
@@ -149,16 +150,16 @@ git_sparse_clone main https://github.com/sirpdboy/luci-app-taskplan luci-app-tas
 #    sed -i '/zsh/d' package/luci-app-advancedplus/root/etc/init.d/advancedplus
 #fi
 
-# 10. 调用 daeuniverse_honk.sh，并自动清理 Windows 换行符
-BUILD_PATH="$GITHUB_WORKSPACE/patch/daeuniverse_honk.sh"
+# 10. 调用 QiuSimons_honk.sh，并自动清理 Windows 换行符
+BUILD_PATH="$GITHUB_WORKSPACE/patch/QiuSimons_honk.sh"
 if [ -f "$BUILD_PATH" ]; then
-  echo "🧹 正在自动清理 daeuniverse_honk.sh 的 Windows 换行符 (CRLF -> LF)..."
+  echo "🧹 正在自动清理 QiuSimons_honk.sh 的 Windows 换行符 (CRLF -> LF)..."
   sed -i 's/\r$//' "$BUILD_PATH"
   
-  echo "🔑 正在赋予 daeuniverse_honk.sh 执行权限..."
+  echo "🔑 正在赋予 QiuSimons_honk.sh 执行权限..."
   chmod +x "$BUILD_PATH"  # 加上这行更稳妥
   
-  echo "🚀 正在执行 daeuniverse_honk.sh..."
+  echo "🚀 正在执行 QiuSimons_honk.sh..."
   bash "$BUILD_PATH"
 fi
 ###########################################################################
