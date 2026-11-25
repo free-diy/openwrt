@@ -6,7 +6,7 @@ on:
       target_device:
         description: '🎯 选择编译目标设备'
         required: true
-        default: 'x86_25_D'
+        default: 'x86_25_Q'
         type: choice
         options:
           - 'x86_25_Q'
