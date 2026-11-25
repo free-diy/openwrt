@@ -51,7 +51,7 @@ jobs:
           echo "REPO_URL=https://github.com/chasey-dev/immortalwrt-mt798x-rebase" >> $GITHUB_ENV
           echo "REPO_BRANCH=25.12" >> $GITHUB_ENV
           echo "CONFIG_FILE=configs/immortalwrt_25.12_netcore_n60-pro.config" >> $GITHUB_ENV
-          echo "TARGET_PATTERN=*sysupgrade.itb" >> $GITHUB_ENV
+          echo "TARGET_PATTERN=*squashfs*" >> $GITHUB_ENV
           echo "DIY_P2_SH=scripts/immortalwrt_25.12_netcore_n60-pro.sh" >> $GITHUB_ENV
 
         elif [[ "$ID" == "x86_25_D" ]]; then
@@ -233,6 +233,10 @@ jobs:
 
         echo "=== [1/2] bin/targets 下所有文件 ==="
         find bin/targets -type f | sort
+
+        # 安全删除不需要的元数据和非目标镜像类型
+        find bin/targets/ -type f -iregex ".*\.\(json\|manifest\|buildinfo\|sha256sums\|packages\)$" -delete
+        find bin/targets/ -type f \( -name "*initramfs*" -o -name "*factory*" -o -name "*rootfs*" \) -delete
 
         echo "=== [2/2] 匹配 TARGET_PATTERN (${{ env.TARGET_PATTERN }}) 的产物 ==="
         find bin/targets -type f -name "${{ env.TARGET_PATTERN }}" ! -name "*.json" ! -name "*.manifest" | sort | tee /tmp/matched_artifacts.txt
