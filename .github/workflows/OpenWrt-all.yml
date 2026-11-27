@@ -106,12 +106,6 @@ jobs:
         sudo -E apt-get -qq autoremove --purge -y $APT_OPTS && sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
 
-        echo "📦 安装 Go (snap)..."
-        sudo snap install --classic go
-        export PATH="/snap/bin:$PATH"
-        echo "/snap/bin" >> "$GITHUB_PATH"
-        go version
-
         echo "📦 安装 pnpm..."
         timeout 180 sudo npm install -g pnpm --fetch-retries=3 --fetch-retry-mintimeout=5000
         echo "✅ 第 4 步环境部署完成"
