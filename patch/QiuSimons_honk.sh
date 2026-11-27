@@ -1,5 +1,5 @@
-# --- 整合 QiuSimons/luci-app-honk 的宿主机编译环境依赖 ---
-echo "🔧 正在搜索并配置 luci-app-honk 所需的宿主机工具链..."
+# --- 整合 QiuSimons/luci-app-daeuniverse 的宿主机编译环境依赖 ---
+echo "🔧 正在搜索并配置 luci-app-daeuniverse 所需的宿主机工具链..."
 
 # 1. 安装 Rust 环境及 cargo-zigbuild（如果尚未安装）
 if ! command -v rustup &> /dev/null; then
@@ -14,9 +14,9 @@ fi
 # 2. 限定在 package 和 feeds 目录下快速精准搜索 honk_toolchain.sh
 HONK_TOOLCHAIN_PATH=""
 for candidate in \
-  "package/luci-app-honk/honk/honk_toolchain.sh" \
-  "package/luci-app-honk/honk_toolchain.sh" \
-  "feeds/luci/applications/luci-app-honk/honk/honk_toolchain.sh"; do
+  "package/luci-app-daeuniverse/honk/honk_toolchain.sh" \
+  "package/luci-app-daeuniverse/honk_toolchain.sh" \
+  "feeds/luci/applications/luci-app-daeuniverse/honk/honk_toolchain.sh"; do
   if [ -f "$candidate" ]; then
     HONK_TOOLCHAIN_PATH="$candidate"
     break
