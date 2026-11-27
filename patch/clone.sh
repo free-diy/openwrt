@@ -81,4 +81,5 @@ EOF
 sudo install -m 0755 /tmp/git_sparse_clone /usr/local/bin/git_sparse_clone
 rm -f /tmp/git_sparse_clone
 echo "✅ 已生成全局命令: /usr/local/bin/git_sparse_clone"
+
 # 增强版稀疏克隆end
